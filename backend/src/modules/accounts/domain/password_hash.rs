@@ -1,4 +1,6 @@
-#[derive(Debug, Clone, PartialEq, Eq)]
+use core::fmt;
+
+#[derive(Clone, PartialEq, Eq)]
 pub struct PasswordHash(String);
 
 impl PasswordHash {
@@ -12,6 +14,12 @@ impl PasswordHash {
 
     pub fn as_str(&self) -> &str {
         &self.0
+    }
+}
+
+impl fmt::Debug for PasswordHash {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("PasswordHash([REDACTED])")
     }
 }
 
