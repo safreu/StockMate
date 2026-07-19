@@ -1,9 +1,8 @@
-use std::sync::LazyLock;
 use regex::Regex;
+use std::sync::LazyLock;
 
 static EMAIL_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"^[\w.-]+@([\w-]+\.)+[\w-]{2,4}$")
-        .expect("email regex must be valid")
+    Regex::new(r"^[\w.-]+@([\w-]+\.)+[\w-]{2,4}$").expect("email regex must be valid")
 });
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -11,10 +10,11 @@ pub struct Email(String);
 
 impl Email {
     pub fn parse(email: &str) -> Result<Self, EmailError> {
-        let email= email.trim().to_owned();
-        
-        if email.is_empty() { return Err(EmailError::Empty); }
+        let email = email.trim().to_owned();
 
+        if email.is_empty() {
+            return Err(EmailError::Empty);
+        }
 
         if !EMAIL_REGEX.is_match(&email) {
             return Err(EmailError::InvalidFormat);
@@ -34,7 +34,6 @@ pub enum EmailError {
     InvalidFormat,
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -48,15 +47,14 @@ mod tests {
 
     #[test]
     fn surrounding_whitespace_is_removed() {
-        let result = Email::parse("   example.email@email.com    ")
-            .expect("email should be valid");
+        let result = Email::parse("   example.email@email.com    ").expect("email should be valid");
 
         assert_eq!(result.as_str(), "example.email@email.com");
     }
 
     #[test]
     fn empty_email_is_rejected() {
-        let result = Email::parse(&String::new());
+        let result = Email::parse("");
 
         assert_eq!(result, Err(EmailError::Empty));
     }
