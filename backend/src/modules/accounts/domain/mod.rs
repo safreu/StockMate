@@ -1,10 +1,11 @@
 mod email;
-pub use email::Email;
+pub use email::{Email, EmailError};
 
 mod user_id;
 pub use user_id::UserId;
 
 mod password_hash;
-pub use password_hash::PasswordHash;
+pub use password_hash::{PasswordHash, PasswordHashError};
 
-pub mod user;
+mod user;
+pub use user::User;

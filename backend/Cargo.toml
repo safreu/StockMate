@@ -29,3 +29,4 @@ validator = { version = "0.20", features = ["derive"] }
 tracing = "0.1"
 tracing-subscriber = { version = "0.3", features = ["env-filter"] }
 email_address = "0.2.9"
+async-trait = "0.1.91"
