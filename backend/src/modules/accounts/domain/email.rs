@@ -1,9 +1,4 @@
-use regex::Regex;
-use std::sync::LazyLock;
-
-static EMAIL_REGEX: LazyLock<Regex> = LazyLock::new(|| {
-    Regex::new(r"^[\w.-]+@([\w-]+\.)+[\w-]{2,4}$").expect("email regex must be valid")
-});
+use email_address::EmailAddress;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Email(String);
@@ -11,12 +6,10 @@ pub struct Email(String);
 impl Email {
     pub fn parse(email: &str) -> Result<Self, EmailError> {
         let email = email.trim().to_owned();
-
         if email.is_empty() {
             return Err(EmailError::Empty);
         }
-
-        if !EMAIL_REGEX.is_match(&email) {
+        if !EmailAddress::is_valid(&email) {
             return Err(EmailError::InvalidFormat);
         }
 
