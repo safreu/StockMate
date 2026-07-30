@@ -38,7 +38,7 @@ mod tests {
         let id = UserId::new();
         let email = Email::parse("example.email@email.com").expect("Email should be valid");
         let password_hash =
-            PasswordHash::parse("$argon2id$example").expect("Password hash should be valid");
+            PasswordHash::from_encoded("$argon2id$example").expect("Password hash should be valid");
 
         let user = User::new(id, email.clone(), password_hash.clone());
 
