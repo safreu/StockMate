@@ -40,7 +40,7 @@ mod tests {
     }
 
     #[test]
-    fn from_uuid_preservers_uuid() {
+    fn from_uuid_preserves_uuid() {
         let uuid = Uuid::new_v4();
 
         let user_id = UserId::from_uuid(uuid);
