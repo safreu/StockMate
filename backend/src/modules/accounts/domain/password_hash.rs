@@ -4,7 +4,7 @@ use core::fmt;
 pub struct PasswordHash(String);
 
 impl PasswordHash {
-    pub fn parse(value: &str) -> Result<Self, PasswordHashError> {
+    pub fn from_encoded(value: &str) -> Result<Self, PasswordHashError> {
         let value = value.to_owned();
         if value.trim().is_empty() {
             return Err(PasswordHashError::Empty);
@@ -34,26 +34,26 @@ mod tests {
 
     #[test]
     fn non_empty_hash_is_accepted() {
-        let hash = PasswordHash::parse("$argon2id$example");
+        let hash = PasswordHash::from_encoded("$argon2id$example");
 
         assert!(hash.is_ok());
     }
 
     #[test]
     fn empty_hash_is_rejected() {
-        let result = PasswordHash::parse("");
+        let result = PasswordHash::from_encoded("");
 
         assert_eq!(result, Err(PasswordHashError::Empty));
     }
     #[test]
     fn whitespace_only_hash_is_rejected() {
-        let result = PasswordHash::parse("      ");
+        let result = PasswordHash::from_encoded("      ");
 
         assert_eq!(result, Err(PasswordHashError::Empty));
     }
     #[test]
     fn hash_can_be_read_as_str() {
-        let hash = PasswordHash::parse("$argon2id$example").expect("Hash should be valid");
+        let hash = PasswordHash::from_encoded("$argon2id$example").expect("Hash should be valid");
 
         assert_eq!(hash.as_str(), "$argon2id$example");
     }

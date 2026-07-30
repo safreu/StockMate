@@ -67,7 +67,8 @@ mod tests {
         User::new(
             UserId::new(),
             Email::parse(email).expect("Email should be valid"),
-            PasswordHash::parse("$test$password_hash").expect("Password hash should be valid"),
+            PasswordHash::from_encoded("$test$password_hash")
+                .expect("Password hash should be valid"),
         )
     }
 
