@@ -28,7 +28,7 @@ CREATE TABLE household_members (
         ON DELETE CASCADE,
 
     CONSTRAINT household_members_users_fk
-        FOREIGN KEY (household_id)
+        FOREIGN KEY (user_id)
         REFERENCES users (id)
         ON DELETE CASCADE,
 
