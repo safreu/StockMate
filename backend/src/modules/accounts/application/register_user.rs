@@ -29,19 +29,6 @@ impl RegisterUserService {
     pub async fn execute(&self, command: RegisterUserCommand) -> Result<UserId, RegisterUserError> {
         let email = Email::parse(&command.email).map_err(|_| RegisterUserError::InvalidEmail)?;
 
-        let existing = self
-            .user_repository
-            .find_by_email(&email)
-            .await
-            .map_err(|error| {
-                tracing::error!(error = ?error, "failed ot check wether registration email aready exists");
-                RegisterUserError::RepositoryFailed
-            })?;
-
-        if existing.is_some() {
-            return Err(RegisterUserError::EmailAlreadyExists);
-        }
-
         let password_hasher = Arc::clone(&self.password_hasher);
         let password_hash =
             tokio::task::spawn_blocking(move || password_hasher.hash(&command.password))
@@ -63,7 +50,10 @@ impl RegisterUserService {
             .insert(&user)
             .await
             .map_err(|error| match error {
-                UserRepositoryError::EmailAlreadyExists => RegisterUserError::EmailAlreadyExists,
+                UserRepositoryError::EmailAlreadyExists => {
+                    tracing::debug!("Email alerady exists");
+                    RegisterUserError::EmailAlreadyExists
+                },
                 other => {
                     tracing::error!(error = ?other, user_id = %user.id(), "failed to persist registered user");
                     RegisterUserError::RepositoryFailed
