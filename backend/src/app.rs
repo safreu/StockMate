@@ -1,13 +1,20 @@
-use crate::{config::AppConfig, shared::db::create_pool};
+use std::sync::Arc;
+
+use crate::{
+    config::AppConfig,
+    modules::accounts::{
+        adapters::{Argon2PasswordHasher, PostgresUserRepository},
+        api::accounts_router,
+        application::RegisterUserService,
+    },
+    shared::{api::AppState, db::create_pool},
+};
 use axum::{Json, Router, routing::get};
 use serde::Serialize;
-use sqlx::PgPool;
 use tokio::net::TcpListener;
+use tower_http::trace::TraceLayer;
 
-#[derive(Clone)]
-pub struct AppState {
-    pub database: PgPool,
-}
+use tower_http::request_id::{MakeRequestUuid, PropagateRequestIdLayer, SetRequestIdLayer};
 
 pub struct Application {
     listener: TcpListener,
@@ -18,11 +25,18 @@ impl Application {
     pub async fn build(config: AppConfig) -> Result<Self, ApplicationError> {
         let database = create_pool(&config.database).await?;
 
-        let state = AppState { database };
+        let user_repository = Arc::new(PostgresUserRepository::new(database));
 
-        let router = Router::new()
-            .route("/api/v1/health", get(health))
-            .with_state(state);
+        let password_hasher = Arc::new(Argon2PasswordHasher::new());
+
+        let register_user_service =
+            Arc::new(RegisterUserService::new(user_repository, password_hasher));
+
+        let state = AppState {
+            register_user_service,
+        };
+
+        let router = build_router(state);
 
         let listener = TcpListener::bind(config.server.address).await?;
 
@@ -38,6 +52,16 @@ impl Application {
             .with_graceful_shutdown(shutdown_signal())
             .await
     }
+}
+
+pub fn build_router(state: AppState) -> Router {
+    Router::new()
+        .route("/api/v1/health", get(health))
+        .nest("/api/v1/auth", accounts_router())
+        .layer(PropagateRequestIdLayer::x_request_id())
+        .layer(TraceLayer::new_for_http())
+        .layer(SetRequestIdLayer::x_request_id(MakeRequestUuid))
+        .with_state(state)
 }
 
 #[derive(Debug, Serialize)]
