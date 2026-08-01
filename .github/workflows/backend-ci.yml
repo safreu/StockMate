@@ -47,3 +47,66 @@ jobs:
 
       - name: Run tests
         run: cargo test --all-features
+
+  coverage:
+    name: Test coverage
+    runs-on: ubuntu-latest
+
+    services:
+      postgres:
+          image: postgres:17
+          env:
+            POSTGRES_USER: postgres
+            POSTGRES_PASSWORD: postgres
+            POSTGRES_DB: stockmate_test
+          ports:
+            - 5432:5432
+          options: >-
+            --health-cmd "pg_isready -U postgres -d stockmate_test"
+            --health-interval 10s
+            --health-timeout 5s
+            --health-retries 4
+        
+    env:
+      DATABASE_URL: postgres://postgres:postgres@localhost:5432/stockmate_test
+      
+    steps:
+      - name: Check out repository
+        uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: actions-rust-lang/setup-rust-toolchain@v1
+        with:
+          toolchain: stable
+          components: llvm-tools-preview
+
+      - name: Cache Rust dependencies
+        uses: Swatinem/rust-cache@v2
+
+      - name: Install cargo-llvm-cov
+        uses: taiki-e/install-action@cargo-llvm-cov
+
+      - name: Generate coverage report
+        run: cargo llvm-cov --all-features --workspace --lcov --output-path lcov.info
+
+      - name: Upload coverate to Codecov
+        uses: codecov/codecov-action@v7
+        with:
+          files: lcov.info
+          fail_ci_if_error: true
+          token: ${{ secrets.CODECOV_TOKEN }}
+
+      - name: Generate HTML coverage report
+        run: cargo llvm-cov --all-features --workspace --html
+
+      - name: Upload coverage artifact
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-report
+          path: lcov.info
+
+      - name: Upload HTML coverage
+        uses: actions/upload-artifact@v7
+        with:
+          name: coverage-report
+          path: target/llvm-cov/html
