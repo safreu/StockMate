@@ -3,6 +3,8 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use serde::Serialize;
 
+use crate::modules::accounts::application::RegisterUserError;
+
 #[derive(Debug)]
 pub struct ApiError {
     status: StatusCode,
@@ -80,6 +82,26 @@ impl ApiError {
                 code,
                 message: message.into(),
             },
+        }
+    }
+}
+
+impl From<RegisterUserError> for ApiError {
+    fn from(error: RegisterUserError) -> Self {
+        match error {
+            RegisterUserError::EmailAlreadyExists => ApiError::bad_request(
+                "email_already_exists",
+                "A user with this email already exists",
+            ),
+            RegisterUserError::InvalidEmail => {
+                ApiError::conflict("invalid_email", "The email adress is invalid")
+            }
+            RegisterUserError::PasswordHashingFailed => {
+                ApiError::internal("internal_error", "An internal error occured")
+            }
+            RegisterUserError::RepositoryFailed => {
+                ApiError::internal("internal_error", "An internal error occured")
+            }
         }
     }
 }
