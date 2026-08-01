@@ -10,3 +10,14 @@ pub struct RegisterUserRequest {
 pub struct RegisterUserResponse {
     pub id: String,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct LoginUserRequest {
+    pub email: String,
+    pub password: String,
+}
+
+#[derive(Debug, Serialize)]
+pub struct LoginUserResponse {
+    pub id: String,
+}
