@@ -3,7 +3,7 @@ use axum::http::StatusCode;
 use axum::response::{IntoResponse, Response};
 use serde::Serialize;
 
-use crate::modules::accounts::application::RegisterUserError;
+use crate::modules::accounts::application::{LoginUserError, RegisterUserError};
 
 #[derive(Debug)]
 pub struct ApiError {
@@ -101,6 +101,20 @@ impl From<RegisterUserError> for ApiError {
             }
             RegisterUserError::RepositoryFailed => {
                 ApiError::internal("internal_error", "An internal error occured")
+            }
+        }
+    }
+}
+
+impl From<LoginUserError> for ApiError {
+    fn from(error: LoginUserError) -> Self {
+        match error {
+            LoginUserError::InvalidCredentials => ApiError::unauthorized(
+                "invalid_credentials",
+                "The supplied credentials are invalid",
+            ),
+            LoginUserError::PasswordVerificationError | LoginUserError::RepositoryFailed => {
+                ApiError::internal("internal_error", "An internal error occurred")
             }
         }
     }

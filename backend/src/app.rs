@@ -5,7 +5,7 @@ use crate::{
     modules::accounts::{
         adapters::{Argon2PasswordHasher, PostgresUserRepository},
         api::accounts_router,
-        application::RegisterUserService,
+        application::{LoginUserService, RegisterUserService},
     },
     shared::{api::AppState, db::create_pool},
 };
@@ -29,11 +29,16 @@ impl Application {
 
         let password_hasher = Arc::new(Argon2PasswordHasher::new());
 
-        let register_user_service =
-            Arc::new(RegisterUserService::new(user_repository, password_hasher));
+        let register_user_service = Arc::new(RegisterUserService::new(
+            user_repository.clone(),
+            password_hasher.clone(),
+        ));
+
+        let login_user_service = Arc::new(LoginUserService::new(user_repository, password_hasher));
 
         let state = AppState {
             register_user_service,
+            login_user_service,
         };
 
         let router = build_router(state);
