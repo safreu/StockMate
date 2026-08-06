@@ -3,9 +3,12 @@ use std::sync::Arc;
 use crate::{
     config::AppConfig,
     modules::accounts::{
-        adapters::{Argon2PasswordHasher, PostgresUserRepository},
+        adapters::{
+            Argon2PasswordHasher, PostgresSessionRepository, PostgresUserRepository,
+            SecureSessionTokenGenerator, Sha256SessionTokenHasher,
+        },
         api::accounts_router,
-        application::{LoginUserService, RegisterUserService},
+        application::{CreateSessionService, LoginUserService, RegisterUserService},
     },
     shared::{api::AppState, db::create_pool},
 };
@@ -25,7 +28,8 @@ impl Application {
     pub async fn build(config: AppConfig) -> Result<Self, ApplicationError> {
         let database = create_pool(&config.database).await?;
 
-        let user_repository = Arc::new(PostgresUserRepository::new(database));
+        let user_repository = Arc::new(PostgresUserRepository::new(database.clone()));
+        let session_repository = Arc::new(PostgresSessionRepository::new(database.clone()));
 
         let password_hasher = Arc::new(Argon2PasswordHasher::new());
 
@@ -36,9 +40,21 @@ impl Application {
 
         let login_user_service = Arc::new(LoginUserService::new(user_repository, password_hasher));
 
+        let session_token_generator = Arc::new(SecureSessionTokenGenerator);
+
+        let session_token_hasher = Arc::new(Sha256SessionTokenHasher);
+
+        let create_session_service = Arc::new(CreateSessionService::new(
+            session_repository,
+            session_token_generator,
+            session_token_hasher,
+            chrono::Duration::days(30),
+        ));
+
         let state = AppState {
             register_user_service,
             login_user_service,
+            create_session_service,
         };
 
         let router = build_router(state);

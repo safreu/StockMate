@@ -5,4 +5,6 @@ mod login_user;
 pub use login_user::{LoginUserCommand, LoginUserError, LoginUserService};
 
 mod create_session;
-pub use create_session::{CreateSessionCommand, CreateSessionResult, CreateSessionService};
+pub use create_session::{
+    CreateSessionCommand, CreateSessionError, CreateSessionResult, CreateSessionService,
+};
