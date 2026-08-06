@@ -5,3 +5,4 @@
 - Make session cookie configuration environment-specific.
 - Distinguish repository unavailable errors from generic failures.
 - Add reusable failing repository test doubles.
+- Remove expired sessions during authentication or through periodic cleanup.
