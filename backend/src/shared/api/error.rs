@@ -4,7 +4,7 @@ use axum::response::{IntoResponse, Response};
 use serde::Serialize;
 
 use crate::modules::accounts::application::{
-    CreateSessionError, LoginUserError, RegisterUserError,
+    AuthenticateSessionError, CreateSessionError, LoginUserError, RegisterUserError,
 };
 
 #[derive(Debug)]
@@ -96,13 +96,13 @@ impl From<RegisterUserError> for ApiError {
                 "A user with this email already exists",
             ),
             RegisterUserError::InvalidEmail => {
-                ApiError::conflict("invalid_email", "The email adress is invalid")
+                ApiError::conflict("invalid_email", "The email address is invalid")
             }
             RegisterUserError::PasswordHashingFailed => {
-                ApiError::internal("internal_error", "An internal error occured")
+                ApiError::internal("internal_error", "An internal error occurred")
             }
             RegisterUserError::RepositoryFailed => {
-                ApiError::internal("internal_error", "An internal error occured")
+                ApiError::internal("internal_error", "An internal error occurred")
             }
         }
     }
@@ -128,6 +128,19 @@ impl From<CreateSessionError> for ApiError {
             CreateSessionError::TokenGenerationFailed
             | CreateSessionError::InvalidSession
             | CreateSessionError::RepositoryFailed => {
+                ApiError::internal("internal_error", "An internal error occurred")
+            }
+        }
+    }
+}
+
+impl From<AuthenticateSessionError> for ApiError {
+    fn from(error: AuthenticateSessionError) -> Self {
+        match error {
+            AuthenticateSessionError::InvalidSession | AuthenticateSessionError::SessionExpired => {
+                ApiError::unauthorized("unauthorized", "Authentication is required")
+            }
+            AuthenticateSessionError::RepositoryFailed => {
                 ApiError::internal("internal_error", "An internal error occurred")
             }
         }

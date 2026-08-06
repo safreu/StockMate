@@ -51,7 +51,7 @@ impl RegisterUserService {
             .await
             .map_err(|error| match error {
                 UserRepositoryError::EmailAlreadyExists => {
-                    tracing::debug!("Email alerady exists");
+                    tracing::debug!("Email already exists");
                     RegisterUserError::EmailAlreadyExists
                 },
                 other => {
