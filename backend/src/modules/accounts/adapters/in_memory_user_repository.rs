@@ -59,7 +59,7 @@ impl Default for InMemoryUserRepository {
 
 #[cfg(test)]
 mod tests {
-    use crate::modules::accounts::domain::PasswordHash;
+    use crate::modules::accounts::domain::{DisplayName, PasswordHash};
 
     use super::*;
 
@@ -67,6 +67,7 @@ mod tests {
         User::new(
             UserId::new(),
             Email::parse(email).expect("Email should be valid"),
+            DisplayName::parse("valid name").expect("Display name should be valid"),
             PasswordHash::from_encoded("$test$password_hash")
                 .expect("Password hash should be valid"),
         )
