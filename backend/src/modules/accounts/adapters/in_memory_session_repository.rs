@@ -177,12 +177,12 @@ mod tests {
             .await
             .expect("Deletion should succeed");
 
-        assert!(
-            repository
-                .find_by_token_hash(session.token_hash())
-                .await
-                .is_ok()
-        );
+        let result = repository
+            .find_by_token_hash(session.token_hash())
+            .await
+            .expect("Lookup should succeed");
+
+        assert!(result.is_none());
     }
 
     #[tokio::test]

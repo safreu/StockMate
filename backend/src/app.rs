@@ -37,7 +37,7 @@ impl Application {
     }
 }
 
-pub fn build_router(state: AppState) -> Router {
+fn build_router(state: AppState) -> Router {
     Router::new()
         .route("/api/v1/health", get(health))
         .nest("/api/v1/auth", accounts_router())
