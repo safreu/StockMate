@@ -23,8 +23,9 @@ impl fmt::Debug for PasswordHash {
     }
 }
 
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
 pub enum PasswordHashError {
+    #[error("Password hash cannot be empty")]
     Empty,
 }
 

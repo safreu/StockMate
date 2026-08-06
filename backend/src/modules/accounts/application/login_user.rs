@@ -218,11 +218,11 @@ mod tests {
     impl PasswordHasher for FailingPasswordHasher {
         #[allow(unused_variables)]
         fn hash(&self, password: &str) -> Result<PasswordHash, PasswordHasherError> {
-            Err(PasswordHasherError::HashingFailed)
+            Err(PasswordHasherError::HashFailed)
         }
         #[allow(unused_variables)]
         fn verify(&self, password: &str, hash: &PasswordHash) -> Result<bool, PasswordHasherError> {
-            Err(PasswordHasherError::VerificationFailed)
+            Err(PasswordHasherError::VerifyFailed)
         }
     }
 }
