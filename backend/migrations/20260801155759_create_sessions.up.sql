@@ -9,7 +9,9 @@ CREATE TABLE sessions (
     CONSTRAINT sessions_user_fk
         FOREIGN KEY (user_id)
         REFERENCES users (id)
-        ON DELETE CASCADE
+        ON DELETE CASCADE,
+
+    CONSTRAINT sessions_token_hash_unique UNIQUE (token_hash)
 );
 
 CREATE INDEX sessions_user_id_idx

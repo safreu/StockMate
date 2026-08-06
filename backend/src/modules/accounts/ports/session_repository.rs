@@ -7,7 +7,7 @@ use crate::modules::accounts::domain::SessionTokenHash;
 pub trait SessionRepository: Send + Sync {
     async fn insert(&self, session: &Session) -> Result<(), SessionRepositoryError>;
 
-    async fn find_by_token(
+    async fn find_by_token_hash(
         &self,
         token_hash: &SessionTokenHash,
     ) -> Result<Option<Session>, SessionRepositoryError>;

@@ -33,7 +33,7 @@ impl SessionRepository for InMemorySessionRepository {
         Ok(())
     }
 
-    async fn find_by_token(
+    async fn find_by_token_hash(
         &self,
         token_hash: &SessionTokenHash,
     ) -> Result<Option<Session>, SessionRepositoryError> {
@@ -107,7 +107,7 @@ mod tests {
             .expect("Session insertion should succeed");
 
         let found = repository
-            .find_by_token(session.token_hash())
+            .find_by_token_hash(session.token_hash())
             .await
             .expect("Session lookup should succeed")
             .expect("Inserted session should exist");
@@ -134,7 +134,7 @@ mod tests {
             .expect("Session insertion should succeed");
 
         let found = repository
-            .find_by_token(&another_token_hash)
+            .find_by_token_hash(&another_token_hash)
             .await
             .expect("Session lookup should succeed");
         assert!(found.is_none())
@@ -177,7 +177,12 @@ mod tests {
             .await
             .expect("Deletion should succeed");
 
-        assert!(repository.find_by_token(session.token_hash()).await.is_ok());
+        assert!(
+            repository
+                .find_by_token_hash(session.token_hash())
+                .await
+                .is_ok()
+        );
     }
 
     #[tokio::test]
