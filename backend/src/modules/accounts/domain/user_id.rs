@@ -48,7 +48,7 @@ mod tests {
     }
 
     #[test]
-    fn from_uuid_preservers_uuid() {
+    fn from_uuid_preserves_uuid() {
         let uuid = Uuid::new_v4();
 
         let user_id = UserId::from_uuid(uuid);
@@ -57,7 +57,7 @@ mod tests {
     }
 
     #[test]
-    fn into_uuid_retruns_the_inner_uuid() {
+    fn into_uuid_returns_the_inner_uuid() {
         let uuid = Uuid::new_v4();
         let user_id = UserId::from_uuid(uuid);
 

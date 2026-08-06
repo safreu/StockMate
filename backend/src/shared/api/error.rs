@@ -89,18 +89,15 @@ impl ApiError {
 impl From<RegisterUserError> for ApiError {
     fn from(error: RegisterUserError) -> Self {
         match error {
-            RegisterUserError::EmailAlreadyExists => ApiError::bad_request(
+            RegisterUserError::EmailAlreadyExists => ApiError::conflict(
                 "email_already_exists",
                 "A user with this email already exists",
             ),
             RegisterUserError::InvalidEmail => {
-                ApiError::conflict("invalid_email", "The email adress is invalid")
+                ApiError::bad_request("invalid_email", "The email address is invalid")
             }
-            RegisterUserError::PasswordHashingFailed => {
-                ApiError::internal("internal_error", "An internal error occured")
-            }
-            RegisterUserError::RepositoryFailed => {
-                ApiError::internal("internal_error", "An internal error occured")
+            RegisterUserError::PasswordHashingFailed | RegisterUserError::RepositoryFailed => {
+                ApiError::internal("internal_error", "An internal error occurred")
             }
         }
     }

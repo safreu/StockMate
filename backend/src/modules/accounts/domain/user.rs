@@ -34,7 +34,7 @@ mod tests {
     use super::*;
 
     #[test]
-    fn user_is_created_with_given_status() {
+    fn user_is_created_with_given_values() {
         let id = UserId::new();
         let email = Email::parse("example.email@email.com").expect("Email should be valid");
         let password_hash =
