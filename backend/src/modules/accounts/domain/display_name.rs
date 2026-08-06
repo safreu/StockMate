@@ -8,8 +8,8 @@ impl DisplayName {
             return Err(DisplayNameError::Empty);
         };
 
-        if value.len() > 50 {
-            return Err(DisplayNameError::Length);
+        if value.chars().count() > 100 {
+            return Err(DisplayNameError::TooLong);
         }
 
         Ok(Self(value.to_string()))
@@ -25,7 +25,7 @@ pub enum DisplayNameError {
     #[error("Display name cannot be empty")]
     Empty,
     #[error("Display name cannot be longer than 50 characters")]
-    Length,
+    TooLong,
 }
 
 #[cfg(test)]
@@ -50,10 +50,10 @@ mod tests {
 
     #[test]
     fn too_long_display_name_is_rejected() {
-        let name = &"a".repeat(51);
+        let name = &"a".repeat(101);
         let result = DisplayName::parse(name);
 
-        assert_eq!(result, Err(DisplayNameError::Length))
+        assert_eq!(result, Err(DisplayNameError::TooLong))
     }
 
     #[test]
