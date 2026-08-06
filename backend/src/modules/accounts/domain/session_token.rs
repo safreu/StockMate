@@ -4,8 +4,11 @@ use core::fmt;
 pub struct SessionToken(String);
 
 impl SessionToken {
-    pub fn from_string(value: String) -> Self {
-        Self(value)
+    pub fn from_string(value: String) -> Result<Self, SessionTokenError> {
+        if value.trim().is_empty() {
+            return Err(SessionTokenError::Empty);
+        }
+        Ok(Self(value))
     }
 
     pub fn as_str(&self) -> &str {
@@ -23,6 +26,12 @@ impl fmt::Debug for SessionToken {
     }
 }
 
+#[derive(Debug, Clone, PartialEq, Eq, thiserror::Error)]
+pub enum SessionTokenError {
+    #[error("Session token cannot be empty")]
+    Empty,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -30,7 +39,8 @@ mod tests {
     #[test]
     fn from_string_preserves_value() {
         let token = "This is a session token";
-        let session_token = SessionToken::from_string(token.to_string());
+        let session_token =
+            SessionToken::from_string(token.to_string()).expect("Test token should be valid");
 
         assert_eq!(session_token.as_str(), token)
     }
@@ -38,8 +48,17 @@ mod tests {
     #[test]
     fn into_string_returns_inner_string() {
         let token = "This is a session token";
-        let session_token = SessionToken::from_string(token.to_string());
+        let session_token =
+            SessionToken::from_string(token.to_string()).expect("Test token should be valid");
 
         assert_eq!(session_token.into_string(), token)
+    }
+
+    #[test]
+    fn empty_token_should_be_rejected() {
+        let token = "    ";
+        let session_token = SessionToken::from_string(token.to_string());
+
+        assert_eq!(session_token, Err(SessionTokenError::Empty))
     }
 }

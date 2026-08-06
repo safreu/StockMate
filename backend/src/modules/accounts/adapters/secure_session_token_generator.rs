@@ -24,7 +24,7 @@ impl SessionTokenGenerator for SecureSessionTokenGenerator {
 
         let encoded = URL_SAFE_NO_PAD.encode(bytes);
 
-        Ok(SessionToken::from_string(encoded))
+        SessionToken::from_string(encoded).map_err(|_| SessionTokenGeneratorError::GenerationFailed)
     }
 }
 

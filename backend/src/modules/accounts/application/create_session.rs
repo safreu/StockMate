@@ -107,7 +107,8 @@ mod tests {
 
     impl SessionTokenGenerator for FixedSessionTokenGenerator {
         fn generate(&self) -> Result<SessionToken, SessionTokenGeneratorError> {
-            Ok(SessionToken::from_string(self.token.clone()))
+            Ok(SessionToken::from_string(self.token.clone())
+                .expect("Test session token should be valid"))
         }
     }
 

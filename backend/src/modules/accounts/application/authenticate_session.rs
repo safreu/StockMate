@@ -97,7 +97,8 @@ mod tests {
         let (service, repository, hasher) = test_service();
 
         let user_id = UserId::new();
-        let token = SessionToken::from_string("this-is-a-session-token".to_owned());
+        let token = SessionToken::from_string("this-is-a-session-token".to_owned())
+            .expect("Test session token should be valid");
         let token_hash = hasher.hash(&token);
 
         let created_at = Utc::now();
@@ -129,7 +130,8 @@ mod tests {
     async fn unknown_token_returns_invalid_session() {
         let (service, _, _) = test_service();
 
-        let token = SessionToken::from_string("unknown-token".to_owned());
+        let token = SessionToken::from_string("unknown-token".to_owned())
+            .expect("Test session token should be valid");
 
         let result = service.execute(AuthenticateSessionCommand { token }).await;
 
@@ -141,7 +143,8 @@ mod tests {
         let (service, repository, hasher) = test_service();
 
         let user_id = UserId::new();
-        let token = SessionToken::from_string("this-is-a-session-token".to_owned());
+        let token = SessionToken::from_string("this-is-a-session-token".to_owned())
+            .expect("Test session token should be valid");
         let token_hash = hasher.hash(&token);
 
         let created_at = Utc::now() - Duration::hours(2);

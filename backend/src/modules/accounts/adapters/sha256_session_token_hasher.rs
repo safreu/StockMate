@@ -35,7 +35,7 @@ mod tests {
     use super::*;
 
     fn token(value: &str) -> SessionToken {
-        SessionToken::from_string(value.to_owned())
+        SessionToken::from_string(value.to_owned()).expect("Test session token should be valid")
     }
 
     #[test]

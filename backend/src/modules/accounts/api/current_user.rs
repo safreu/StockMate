@@ -40,7 +40,8 @@ impl FromRequestParts<AppState> for CurrentUser {
             .get(&state.session_cookie.name)
             .ok_or_else(|| ApiError::unauthorized("unauthorized", "Authentication is required"))?;
 
-        let token = SessionToken::from_string(cookie.value().to_owned());
+        let token = SessionToken::from_string(cookie.value().to_owned())
+            .map_err(|_| ApiError::unauthorized("unauthorized", "Authentication is required"))?;
 
         let authenticated = state
             .authenticate_session_service

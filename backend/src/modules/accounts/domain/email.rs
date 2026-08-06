@@ -1,3 +1,5 @@
+use core::fmt;
+
 use email_address::EmailAddress;
 
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -18,6 +20,12 @@ impl Email {
 
     pub fn as_str(&self) -> &str {
         &self.0
+    }
+}
+
+impl fmt::Display for Email {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
     }
 }
 

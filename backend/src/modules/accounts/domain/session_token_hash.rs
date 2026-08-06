@@ -35,6 +35,12 @@ impl fmt::Debug for SessionTokenHash {
     }
 }
 
+impl fmt::Display for SessionTokenHash {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        f.write_str("SessionTokenHash([REDACTED])")
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
