@@ -1,0 +1,7 @@
+- Add a Clock port for deterministic session timestamps.
+- Add rate limiting to login.
+- Use a dummy Argon2 hash for unknown users.
+- Add expired-session cleanup.
+- Make session cookie configuration environment-specific.
+- Distinguish repository unavailable errors from generic failures.
+- Add reusable failing repository test doubles.

@@ -48,12 +48,15 @@ pub async fn login_user(
         .execute(CreateSessionCommand { user_id })
         .await?;
 
-    let cookie = Cookie::build(("session", session.token.into_string()))
-        .path("/")
-        .http_only(true)
-        .same_site(SameSite::Lax)
-        .secure(false)
-        .build();
+    let cookie = Cookie::build((
+        state.session_cookie.name.clone(),
+        session.token.into_string(),
+    ))
+    .path("/")
+    .http_only(true)
+    .same_site(SameSite::Lax)
+    .secure(state.session_cookie.secure)
+    .build();
 
     let jar = jar.add(cookie);
 

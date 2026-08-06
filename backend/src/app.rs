@@ -1,16 +1,7 @@
-use std::sync::Arc;
-
+use crate::bootstrap::BootstrapError;
 use crate::{
-    config::AppConfig,
-    modules::accounts::{
-        adapters::{
-            Argon2PasswordHasher, PostgresSessionRepository, PostgresUserRepository,
-            SecureSessionTokenGenerator, Sha256SessionTokenHasher,
-        },
-        api::accounts_router,
-        application::{CreateSessionService, LoginUserService, RegisterUserService},
-    },
-    shared::{api::AppState, db::create_pool},
+    bootstrap::build_app_state, config::AppConfig, modules::accounts::api::accounts_router,
+    shared::api::AppState,
 };
 use axum::{Json, Router, routing::get};
 use serde::Serialize;
@@ -26,36 +17,7 @@ pub struct Application {
 
 impl Application {
     pub async fn build(config: AppConfig) -> Result<Self, ApplicationError> {
-        let database = create_pool(&config.database).await?;
-
-        let user_repository = Arc::new(PostgresUserRepository::new(database.clone()));
-        let session_repository = Arc::new(PostgresSessionRepository::new(database.clone()));
-
-        let password_hasher = Arc::new(Argon2PasswordHasher::new());
-
-        let register_user_service = Arc::new(RegisterUserService::new(
-            user_repository.clone(),
-            password_hasher.clone(),
-        ));
-
-        let login_user_service = Arc::new(LoginUserService::new(user_repository, password_hasher));
-
-        let session_token_generator = Arc::new(SecureSessionTokenGenerator);
-
-        let session_token_hasher = Arc::new(Sha256SessionTokenHasher);
-
-        let create_session_service = Arc::new(CreateSessionService::new(
-            session_repository,
-            session_token_generator,
-            session_token_hasher,
-            chrono::Duration::days(30),
-        ));
-
-        let state = AppState {
-            register_user_service,
-            login_user_service,
-            create_session_service,
-        };
+        let state = build_app_state(&config).await?;
 
         let router = build_router(state);
 
@@ -106,7 +68,7 @@ async fn shutdown_signal() {
 #[derive(Debug, thiserror::Error)]
 pub enum ApplicationError {
     #[error("could not connect to PostgreSQL")]
-    Database(#[from] sqlx::Error),
+    Bootstrap(#[from] BootstrapError),
 
     #[error("could not bind the HTTP server")]
     IO(#[from] std::io::Error),
