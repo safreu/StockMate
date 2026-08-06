@@ -5,15 +5,7 @@ use backend::modules::accounts::{
 };
 use sqlx::PgPool;
 
-fn test_user(email: &str) -> User {
-    User::new(
-        UserId::new(),
-        Email::parse(email)
-            .expect("Test email should be valid"),
-        PasswordHash::from_encoded("$argon2id$v=19$m=19456,t=2,p=1$c29tZXNhbHQ$7Qdih1MuhjZehB6Svms5vcBhkM4A5f7QWwD4iM4R+AE")
-            .expect("Test password hash should be valid"),
-    )
-}
+use crate::integration::helpers::test_user;
 
 #[sqlx::test]
 async fn inserted_user_can_be_found_by_id(pool: PgPool) {
