@@ -14,7 +14,7 @@ mod session_id;
 pub use session_id::SessionId;
 
 mod session_token;
-pub use session_token::SessionToken;
+pub use session_token::{SessionToken, SessionTokenError};
 
 mod session_token_hash;
 pub use session_token_hash::{SessionTokenHash, SessionTokenHashError};

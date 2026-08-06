@@ -19,7 +19,7 @@ async fn inserted_user_can_be_found_by_id(pool: PgPool) {
         .expect("Inserting user should succeed");
 
     let found = repository
-        .find_by_id(user_id)
+        .find_by_id(&user_id)
         .await
         .expect("Finding user should succeed")
         .expect("Inserted user should exist");
@@ -56,7 +56,7 @@ async fn find_by_id_returns_none_when_user_does_not_exist(pool: PgPool) {
     let repository = PostgresUserRepository::new(pool);
 
     let found = repository
-        .find_by_id(UserId::new())
+        .find_by_id(&UserId::new())
         .await
         .expect("Finding user should succeed");
 

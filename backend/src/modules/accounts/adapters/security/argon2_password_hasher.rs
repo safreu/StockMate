@@ -24,20 +24,20 @@ impl PasswordHasher for Argon2PasswordHasher {
 
         let encoded_hash = argon2
             .hash_password(password.as_bytes(), &salt)
-            .map_err(|_| PasswordHasherError::HashingFailed)?
+            .map_err(|_| PasswordHasherError::HashFailed)?
             .to_string();
 
-        PasswordHash::from_encoded(&encoded_hash).map_err(|_| PasswordHasherError::HashingFailed)
+        PasswordHash::from_encoded(&encoded_hash).map_err(|_| PasswordHasherError::HashFailed)
     }
 
     fn verify(&self, password: &str, hash: &PasswordHash) -> Result<bool, PasswordHasherError> {
         let parsed_hash =
-            Argon2Hash::new(hash.as_str()).map_err(|_| PasswordHasherError::VerificationFailed)?;
+            Argon2Hash::new(hash.as_str()).map_err(|_| PasswordHasherError::VerifyFailed)?;
 
         match Argon2::default().verify_password(password.as_bytes(), &parsed_hash) {
             Ok(()) => Ok(true),
             Err(Argon2Error::Password) => Ok(false),
-            Err(_) => Err(PasswordHasherError::VerificationFailed),
+            Err(_) => Err(PasswordHasherError::VerifyFailed),
         }
     }
 }
@@ -111,6 +111,6 @@ mod tests {
 
         let result = hasher.verify(password, &malformed_hash);
 
-        assert_eq!(result, Err(PasswordHasherError::VerificationFailed));
+        assert_eq!(result, Err(PasswordHasherError::VerifyFailed));
     }
 }

@@ -40,7 +40,7 @@ impl UserRepository for PostgresUserRepository {
         Ok(())
     }
 
-    async fn find_by_id(&self, id: UserId) -> Result<Option<User>, UserRepositoryError> {
+    async fn find_by_id(&self, id: &UserId) -> Result<Option<User>, UserRepositoryError> {
         let row = sqlx::query(
             r#"
             SELECT id, email, password_hash

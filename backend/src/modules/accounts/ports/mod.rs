@@ -8,4 +8,4 @@ mod session_repository;
 pub use session_repository::{SessionRepository, SessionRepositoryError};
 
 mod session_token;
-pub use session_token::{SessionTokenGenerator, SessionTokenHasher};
+pub use session_token::{SessionTokenGenerator, SessionTokenGeneratorError, SessionTokenHasher};

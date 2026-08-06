@@ -36,10 +36,10 @@ impl UserRepository for InMemoryUserRepository {
         Ok(())
     }
 
-    async fn find_by_id(&self, id: UserId) -> Result<Option<User>, UserRepositoryError> {
+    async fn find_by_id(&self, id: &UserId) -> Result<Option<User>, UserRepositoryError> {
         let users = self.users.read().await;
 
-        Ok(users.get(&id).cloned())
+        Ok(users.get(id).cloned())
     }
 
     async fn find_by_email(&self, email: &Email) -> Result<Option<User>, UserRepositoryError> {
@@ -95,7 +95,7 @@ mod tests {
             .expect("User insertion should succeed");
 
         let search = repository
-            .find_by_id(user.id())
+            .find_by_id(&user.id())
             .await
             .expect("Repository lookup should succeed");
 
@@ -151,7 +151,7 @@ mod tests {
         let id = UserId::new();
 
         let result = repository
-            .find_by_id(id)
+            .find_by_id(&id)
             .await
             .expect("Repository lookup should succeed");
 
