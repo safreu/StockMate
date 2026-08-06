@@ -3,7 +3,7 @@ use sqlx::{PgPool, Row, postgres::PgRow};
 use uuid::Uuid;
 
 use crate::modules::accounts::{
-    domain::{Email, PasswordHash, User, UserId},
+    domain::{DisplayName, Email, PasswordHash, User, UserId},
     ports::{UserRepository, UserRepositoryError},
 };
 
@@ -25,13 +25,15 @@ impl UserRepository for PostgresUserRepository {
             INSERT INTO users (
                 id,
                 email,
+                display_name,
                 password_hash
             )
-            VALUES ($1, $2, $3)
+            VALUES ($1, $2, $3, $4)
             "#,
         )
         .bind(user.id().as_uuid())
         .bind(user.email().as_str())
+        .bind(user.display_name().as_str())
         .bind(user.password_hash().as_str())
         .execute(&self.pool)
         .await
@@ -43,7 +45,7 @@ impl UserRepository for PostgresUserRepository {
     async fn find_by_id(&self, id: &UserId) -> Result<Option<User>, UserRepositoryError> {
         let row = sqlx::query(
             r#"
-            SELECT id, email, password_hash
+            SELECT id, email, display_name, password_hash
             FROM users
             WHERE id = $1
             "#,
@@ -59,7 +61,7 @@ impl UserRepository for PostgresUserRepository {
     async fn find_by_email(&self, email: &Email) -> Result<Option<User>, UserRepositoryError> {
         let row = sqlx::query(
             r#"
-            SELECT id, email, password_hash
+            SELECT id, email, display_name, password_hash
             FROM users
             WHERE email = $1
             "#,
@@ -82,6 +84,10 @@ fn row_to_user(row: PgRow) -> Result<User, UserRepositoryError> {
         .try_get("email")
         .map_err(|_| UserRepositoryError::Database)?;
 
+    let display_name: String = row
+        .try_get("display_name")
+        .map_err(|_| UserRepositoryError::Database)?;
+
     let password_hash: String = row
         .try_get("password_hash")
         .map_err(|_| UserRepositoryError::Database)?;
@@ -90,10 +96,13 @@ fn row_to_user(row: PgRow) -> Result<User, UserRepositoryError> {
 
     let email = Email::parse(&email).map_err(|_| UserRepositoryError::InvalidStoredData)?;
 
+    let display_name =
+        DisplayName::parse(&display_name).map_err(|_| UserRepositoryError::InvalidStoredData)?;
+
     let password_hash = PasswordHash::from_encoded(&password_hash)
         .map_err(|_| UserRepositoryError::InvalidStoredData)?;
 
-    Ok(User::new(id, email, password_hash))
+    Ok(User::new(id, email, display_name, password_hash))
 }
 
 const USERS_EMAIL_UNIQUE_CONSTRAINT: &str = "users_email_unique";

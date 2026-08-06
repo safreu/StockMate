@@ -77,7 +77,7 @@ pub enum LoginUserError {
 mod tests {
     use crate::modules::accounts::{
         adapters::{Argon2PasswordHasher, InMemoryUserRepository},
-        domain::{PasswordHash, User},
+        domain::{DisplayName, PasswordHash, User},
         ports::PasswordHasherError,
     };
 
@@ -85,6 +85,7 @@ mod tests {
 
     const VALID_EMAIL: &str = "valid.email@test.com";
     const VALID_PASSWORD: &str = "This is a secret password";
+    const VALID_NAME: &str = "This is a valid name";
 
     fn login_command(email: &str, password: &str) -> LoginUserCommand {
         LoginUserCommand {
@@ -93,10 +94,16 @@ mod tests {
         }
     }
 
-    fn create_user(email: &str, password: &str, hasher: &Argon2PasswordHasher) -> User {
+    fn create_user(
+        email: &str,
+        display_name: &str,
+        password: &str,
+        hasher: &Argon2PasswordHasher,
+    ) -> User {
         User::new(
             UserId::new(),
             Email::parse(email).expect("Test email should be valid"),
+            DisplayName::parse(display_name).expect("Test display name should be valid"),
             hasher
                 .hash(password)
                 .expect("Test password should be hashable"),
@@ -120,7 +127,7 @@ mod tests {
     async fn correct_credentials_return_user_id() {
         let (service, repository, hasher) = test_service();
 
-        let user = create_user(VALID_EMAIL, VALID_PASSWORD, &hasher);
+        let user = create_user(VALID_EMAIL, VALID_NAME, VALID_PASSWORD, &hasher);
 
         repository
             .insert(&user)
@@ -138,7 +145,7 @@ mod tests {
     async fn wrong_email_returns_invalid_credentials() {
         let (service, repository, hasher) = test_service();
 
-        let user = create_user(VALID_EMAIL, VALID_PASSWORD, &hasher);
+        let user = create_user(VALID_EMAIL, VALID_NAME, VALID_PASSWORD, &hasher);
 
         repository
             .insert(&user)
@@ -156,7 +163,7 @@ mod tests {
     async fn wrong_password_returns_invalid_credentials() {
         let (service, repository, hasher) = test_service();
 
-        let user = create_user(VALID_EMAIL, VALID_PASSWORD, &hasher);
+        let user = create_user(VALID_EMAIL, VALID_NAME, VALID_PASSWORD, &hasher);
 
         repository
             .insert(&user)
@@ -174,7 +181,7 @@ mod tests {
     async fn invalid_email_returns_invalid_credentials() {
         let (service, repository, hasher) = test_service();
 
-        let user = create_user(VALID_EMAIL, VALID_PASSWORD, &hasher);
+        let user = create_user(VALID_EMAIL, VALID_NAME, VALID_PASSWORD, &hasher);
 
         repository
             .insert(&user)
@@ -196,7 +203,7 @@ mod tests {
 
         let service = LoginUserService::new(repository.clone(), Arc::new(FailingPasswordHasher));
 
-        let user = create_user(VALID_EMAIL, VALID_PASSWORD, &hasher);
+        let user = create_user(VALID_EMAIL, VALID_NAME, VALID_PASSWORD, &hasher);
 
         repository
             .insert(&user)

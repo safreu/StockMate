@@ -15,6 +15,7 @@ pub async fn register_user(
 ) -> Result<(StatusCode, Json<RegisterUserResponse>), ApiError> {
     let command = RegisterUserCommand {
         email: request.email,
+        display_name: request.display_name,
         password: request.password,
     };
 

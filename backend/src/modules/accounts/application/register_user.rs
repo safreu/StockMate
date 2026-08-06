@@ -1,12 +1,13 @@
 use std::sync::Arc;
 
 use crate::modules::accounts::{
-    domain::{Email, User, UserId},
+    domain::{DisplayName, Email, User, UserId},
     ports::{PasswordHasher, UserRepository, UserRepositoryError},
 };
 
 pub struct RegisterUserCommand {
     pub email: String,
+    pub display_name: String,
     pub password: String,
 }
 
@@ -29,6 +30,9 @@ impl RegisterUserService {
     pub async fn execute(&self, command: RegisterUserCommand) -> Result<UserId, RegisterUserError> {
         let email = Email::parse(&command.email).map_err(|_| RegisterUserError::InvalidEmail)?;
 
+        let display_name = DisplayName::parse(&command.display_name)
+            .map_err(|_| RegisterUserError::InvalidDisplayName)?;
+
         let password_hasher = Arc::clone(&self.password_hasher);
         let password_hash =
             tokio::task::spawn_blocking(move || password_hasher.hash(&command.password))
@@ -44,7 +48,7 @@ impl RegisterUserService {
 
         let id = UserId::new();
 
-        let user = User::new(id, email, password_hash);
+        let user = User::new(id, email, display_name, password_hash);
 
         self.user_repository
             .insert(&user)
@@ -73,6 +77,8 @@ pub enum RegisterUserError {
     PasswordHashingFailed,
     #[error("User repository failed")]
     RepositoryFailed,
+    #[error("Display name is invalid")]
+    InvalidDisplayName,
 }
 
 #[cfg(test)]
@@ -88,10 +94,12 @@ mod tests {
 
     const VALID_EMAIL: &str = "valid.email@test.com";
     const VALID_PASSWORD: &str = "This is a secret password";
+    const VALID_NAME: &str = "Valid name";
 
-    fn register_command(email: &str, password: &str) -> RegisterUserCommand {
+    fn register_command(email: &str, display_name: &str, password: &str) -> RegisterUserCommand {
         RegisterUserCommand {
             email: email.to_owned(),
+            display_name: display_name.to_owned(),
             password: password.to_owned(),
         }
     }
@@ -114,7 +122,7 @@ mod tests {
         let (service, repository, _) = test_service();
 
         let id = service
-            .execute(register_command(VALID_EMAIL, VALID_PASSWORD))
+            .execute(register_command(VALID_EMAIL, VALID_NAME, VALID_PASSWORD))
             .await
             .expect("Registration should succeed");
 
@@ -126,6 +134,7 @@ mod tests {
 
         assert_eq!(id, stored_user.id());
         assert_eq!(VALID_EMAIL, stored_user.email().as_str());
+        assert_eq!(VALID_NAME, stored_user.display_name().as_str())
     }
 
     #[tokio::test]
@@ -133,7 +142,7 @@ mod tests {
         let (service, repository, hasher) = test_service();
 
         let id = service
-            .execute(register_command(VALID_EMAIL, VALID_PASSWORD))
+            .execute(register_command(VALID_EMAIL, VALID_NAME, VALID_PASSWORD))
             .await
             .expect("Registration should succeed");
 
@@ -155,10 +164,25 @@ mod tests {
         let (service, _, _) = test_service();
 
         let result = service
-            .execute(register_command("invalid.email-test.com", VALID_PASSWORD))
+            .execute(register_command(
+                "invalid.email-test.com",
+                VALID_NAME,
+                VALID_PASSWORD,
+            ))
             .await;
 
         assert_eq!(result, Err(RegisterUserError::InvalidEmail));
+    }
+
+    #[tokio::test]
+    async fn invalid_display_name_is_rejected() {
+        let (service, _, _) = test_service();
+
+        let result = service
+            .execute(register_command(VALID_EMAIL, "         ", VALID_PASSWORD))
+            .await;
+
+        assert_eq!(result, Err(RegisterUserError::InvalidDisplayName));
     }
 
     #[tokio::test]
@@ -166,12 +190,12 @@ mod tests {
         let (service, _, _) = test_service();
 
         service
-            .execute(register_command(VALID_EMAIL, VALID_PASSWORD))
+            .execute(register_command(VALID_EMAIL, VALID_NAME, VALID_PASSWORD))
             .await
             .expect("Registration should succeed");
 
         let another_user = service
-            .execute(register_command(VALID_EMAIL, VALID_PASSWORD))
+            .execute(register_command(VALID_EMAIL, VALID_NAME, VALID_PASSWORD))
             .await;
 
         assert_eq!(another_user, Err(RegisterUserError::EmailAlreadyExists));
@@ -184,7 +208,7 @@ mod tests {
 
         let service = RegisterUserService::new(repository.clone(), hasher.clone());
         let result = service
-            .execute(register_command(VALID_EMAIL, VALID_PASSWORD))
+            .execute(register_command(VALID_EMAIL, VALID_NAME, VALID_PASSWORD))
             .await;
 
         assert_eq!(result, Err(RegisterUserError::PasswordHashingFailed));

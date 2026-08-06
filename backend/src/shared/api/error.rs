@@ -34,6 +34,10 @@ impl ApiError {
         Self::bad_request("invalid_email", "The email address is invalid")
     }
 
+    pub fn invalid_display_name() -> Self {
+        Self::bad_request("invalid_display_name", "The display name is invalid")
+    }
+
     pub fn unauthorized(code: &'static str, message: impl Into<String>) -> Self {
         Self {
             status: StatusCode::UNAUTHORIZED,
@@ -120,6 +124,7 @@ impl From<RegisterUserError> for ApiError {
         match error {
             RegisterUserError::EmailAlreadyExists => Self::email_already_exists(),
             RegisterUserError::InvalidEmail => Self::invalid_email(),
+            RegisterUserError::InvalidDisplayName => Self::invalid_display_name(),
             RegisterUserError::PasswordHashingFailed | RegisterUserError::RepositoryFailed => {
                 Self::internal_error()
             }
