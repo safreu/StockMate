@@ -51,7 +51,6 @@ impl RegisterUserService {
             .await
             .map_err(|error| match error {
                 UserRepositoryError::EmailAlreadyExists => {
-                    tracing::debug!("Email already exists");
                     RegisterUserError::EmailAlreadyExists
                 },
                 other => {
@@ -120,7 +119,7 @@ mod tests {
             .expect("Registration should succeed");
 
         let stored_user = repository
-            .find_by_id(id)
+            .find_by_id(&id)
             .await
             .expect("Repository lookup should succeed")
             .expect("Registered user should exist");
@@ -139,7 +138,7 @@ mod tests {
             .expect("Registration should succeed");
 
         let stored_user = repository
-            .find_by_id(id)
+            .find_by_id(&id)
             .await
             .expect("Repository lookup should succeed")
             .expect("Registered user should exist");
@@ -196,11 +195,11 @@ mod tests {
     impl PasswordHasher for FailingPasswordHasher {
         #[allow(unused_variables)]
         fn hash(&self, password: &str) -> Result<PasswordHash, PasswordHasherError> {
-            Err(PasswordHasherError::HashingFailed)
+            Err(PasswordHasherError::HashFailed)
         }
         #[allow(unused_variables)]
         fn verify(&self, password: &str, hash: &PasswordHash) -> Result<bool, PasswordHasherError> {
-            Err(PasswordHasherError::VerificationFailed)
+            Err(PasswordHasherError::VerifyFailed)
         }
     }
 }

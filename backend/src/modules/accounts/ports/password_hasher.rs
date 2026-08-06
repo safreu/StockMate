@@ -10,7 +10,7 @@ pub trait PasswordHasher: Send + Sync {
 #[derive(Debug, PartialEq, thiserror::Error)]
 pub enum PasswordHasherError {
     #[error("Password hashing failed")]
-    HashingFailed,
+    HashFailed,
     #[error("Password verification failed")]
-    VerificationFailed,
+    VerifyFailed,
 }

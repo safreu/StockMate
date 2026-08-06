@@ -6,3 +6,6 @@
 - Distinguish repository unavailable errors from generic failures.
 - Add reusable failing repository test doubles.
 - Remove expired sessions during authentication or through periodic cleanup.
+- Document the contracts of public traits and error semantics with Rustdoc comments.
+- Introduce shared application test helpers once duplication across service tests becomes significant.
+- Retry session-token generation if persistence reports a token-hash collision.

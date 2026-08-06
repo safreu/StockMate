@@ -4,7 +4,7 @@ use async_trait::async_trait;
 #[async_trait]
 pub trait UserRepository: Send + Sync {
     async fn insert(&self, user: &User) -> Result<(), UserRepositoryError>;
-    async fn find_by_id(&self, id: UserId) -> Result<Option<User>, UserRepositoryError>;
+    async fn find_by_id(&self, id: &UserId) -> Result<Option<User>, UserRepositoryError>;
     async fn find_by_email(&self, email: &Email) -> Result<Option<User>, UserRepositoryError>;
 }
 
