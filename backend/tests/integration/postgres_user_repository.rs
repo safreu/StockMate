@@ -1,6 +1,6 @@
 use backend::modules::accounts::{
     adapters::PostgresUserRepository,
-    domain::{Email, PasswordHash, User, UserId},
+    domain::{Email, UserId},
     ports::{UserRepository, UserRepositoryError},
 };
 use sqlx::PgPool;
