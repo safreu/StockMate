@@ -87,7 +87,6 @@ impl SessionRepository for PostgresSessionRepository {
     }
 }
 
-#[derive(sqlx::FromRow)]
 struct SessionRow {
     id: Uuid,
     user_id: Uuid,

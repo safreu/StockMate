@@ -80,7 +80,6 @@ impl UserRepository for PostgresUserRepository {
     }
 }
 
-#[derive(sqlx::FromRow)]
 struct UserRow {
     id: Uuid,
     email: String,

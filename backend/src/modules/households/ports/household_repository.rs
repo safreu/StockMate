@@ -1,8 +1,11 @@
 use async_trait::async_trait;
 
-use crate::modules::{
-    accounts::domain::UserId,
-    households::domain::{Household, HouseholdId, HouseholdMember},
+use crate::{
+    modules::{
+        accounts::domain::UserId,
+        households::domain::{Household, HouseholdId, HouseholdMember},
+    },
+    shared::db::PersistenceError,
 };
 
 #[async_trait]
@@ -33,10 +36,12 @@ pub trait HouseholdRepository: Send + Sync {
 pub enum HouseholdRepositoryError {
     #[error("A personal household already exists for this owner")]
     PersonalHouseholdAlreadyExists,
-    #[error("Database operation failed")]
-    Database,
     #[error("Stored user data is invalid")]
     InvalidStoredData,
-    #[error("Database is unavailable")]
-    Unavailable,
+    #[error("Household an owner membership are inconsistent")]
+    InvalidAggregate,
+    #[error("Household already exists")]
+    HouseholdAlreadyExists,
+    #[error(transparent)]
+    Persistence(#[from] PersistenceError),
 }
