@@ -8,7 +8,7 @@ use crate::{
         domain::{Session, SessionId, SessionTokenHash, UserId},
         ports::{SessionRepository, SessionRepositoryError},
     },
-    shared::db::{DatabaseErrorKind, classify_sqlx_error},
+    shared::db::map_sqlx_error,
 };
 
 pub struct PostgresSessionRepository {
@@ -63,7 +63,7 @@ impl SessionRepository for PostgresSessionRepository {
         )
         .fetch_optional(&self.pool)
         .await
-        .map_err(map_database_error)?;
+        .map_err(map_sqlx_error)?;
 
         row.map(Session::try_from).transpose()
     }
@@ -81,7 +81,7 @@ impl SessionRepository for PostgresSessionRepository {
         )
         .execute(&self.pool)
         .await
-        .map_err(map_database_error)?;
+        .map_err(map_sqlx_error)?;
 
         Ok(())
     }
@@ -122,15 +122,5 @@ fn map_insert_error(error: sqlx::Error) -> SessionRepositoryError {
         return SessionRepositoryError::TokenHashAlreadyExists;
     }
 
-    map_database_error(error)
-}
-
-fn map_database_error(error: sqlx::Error) -> SessionRepositoryError {
-    tracing::error!(
-        error = ?error, "session repository database operation failed"
-    );
-    match classify_sqlx_error(&error) {
-        DatabaseErrorKind::Unavailable => SessionRepositoryError::Unavailable,
-        DatabaseErrorKind::Other => SessionRepositoryError::Database,
-    }
+    map_sqlx_error(error).into()
 }

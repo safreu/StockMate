@@ -7,7 +7,7 @@ use crate::{
         domain::{DisplayName, Email, PasswordHash, User, UserId},
         ports::{UserRepository, UserRepositoryError},
     },
-    shared::db::{DatabaseErrorKind, classify_sqlx_error},
+    shared::db::map_sqlx_error,
 };
 
 pub struct PostgresUserRepository {
@@ -57,7 +57,7 @@ impl UserRepository for PostgresUserRepository {
         )
         .fetch_optional(&self.pool)
         .await
-        .map_err(map_database_error)?;
+        .map_err(map_sqlx_error)?;
 
         row.map(User::try_from).transpose()
     }
@@ -74,7 +74,7 @@ impl UserRepository for PostgresUserRepository {
         )
         .fetch_optional(&self.pool)
         .await
-        .map_err(map_database_error)?;
+        .map_err(map_sqlx_error)?;
 
         row.map(User::try_from).transpose()
     }
@@ -117,15 +117,5 @@ fn map_insert_error(error: sqlx::Error) -> UserRepositoryError {
         return UserRepositoryError::EmailAlreadyExists;
     }
 
-    map_database_error(error)
-}
-
-fn map_database_error(error: sqlx::Error) -> UserRepositoryError {
-    tracing::error!(
-        error = ?error, "user repository database operation failed"
-    );
-    match classify_sqlx_error(&error) {
-        DatabaseErrorKind::Unavailable => UserRepositoryError::Unavailable,
-        DatabaseErrorKind::Other => UserRepositoryError::Database,
-    }
+    map_sqlx_error(error).into()
 }
