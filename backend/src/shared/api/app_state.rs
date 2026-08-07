@@ -6,7 +6,7 @@ use crate::{
         accounts::application::{
             AuthenticateSessionService, CreateSessionService, LoginUserService, RegisterUserService,
         },
-        households::application::CreateHouseholdService,
+        households::application::{CreateHouseholdService, ListHouseholdsForUserService},
     },
 };
 
@@ -18,4 +18,5 @@ pub struct AppState {
     pub authenticate_session_service: Arc<AuthenticateSessionService>,
     pub session_cookie: SessionCookieConfig,
     pub create_household_service: Arc<CreateHouseholdService>,
+    pub list_households_for_user_service: Arc<ListHouseholdsForUserService>,
 }

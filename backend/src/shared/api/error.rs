@@ -6,7 +6,7 @@ use serde::Serialize;
 use crate::modules::accounts::application::{
     AuthenticateSessionError, CreateSessionError, LoginUserError, RegisterUserError,
 };
-use crate::modules::households::application::CreateHouseholdError;
+use crate::modules::households::application::{CreateHouseholdError, ListHouseholdsForUserError};
 
 #[derive(Debug)]
 pub struct ApiError {
@@ -178,6 +178,14 @@ impl From<CreateHouseholdError> for ApiError {
                 "personal_household_already_exists",
                 "A personal household already exists",
             ),
+        }
+    }
+}
+
+impl From<ListHouseholdsForUserError> for ApiError {
+    fn from(error: ListHouseholdsForUserError) -> Self {
+        match error {
+            ListHouseholdsForUserError::RepositoryFailed => Self::internal_error(),
         }
     }
 }

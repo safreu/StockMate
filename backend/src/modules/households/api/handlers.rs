@@ -4,8 +4,8 @@ use crate::{
     modules::{
         accounts::api::CurrentUser,
         households::{
-            api::dto::{CreateHouseholdRequest, CreateHouseholdResponse},
-            application::CreateHouseholdCommand,
+            api::dto::{CreateHouseholdRequest, CreateHouseholdResponse, ListHouseholdResponse},
+            application::{CreateHouseholdCommand, ListHouseholdsForUserCommand},
             domain::HouseholdKind,
         },
     },
@@ -39,4 +39,30 @@ pub async fn create_household(
             id: household_id.to_string(),
         }),
     ))
+}
+
+pub async fn list_households(
+    State(state): State<AppState>,
+    current_user: CurrentUser,
+) -> Result<Json<Vec<ListHouseholdResponse>>, ApiError> {
+    let command = ListHouseholdsForUserCommand {
+        user_id: current_user.user_id(),
+    };
+
+    let households = state
+        .list_households_for_user_service
+        .execute(command)
+        .await
+        .map_err(ApiError::from)?;
+
+    let response = households
+        .into_iter()
+        .map(|household| ListHouseholdResponse {
+            id: household.id().to_string(),
+            name: household.name().as_str().to_owned(),
+            kind: household.kind().to_string(),
+        })
+        .collect();
+
+    Ok(Json(response))
 }

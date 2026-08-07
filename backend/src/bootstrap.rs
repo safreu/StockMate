@@ -13,7 +13,10 @@ use crate::{
                 RegisterUserService,
             },
         },
-        households::{adapters::PostgresHouseholdRepository, application::CreateHouseholdService},
+        households::{
+            adapters::PostgresHouseholdRepository,
+            application::{CreateHouseholdService, ListHouseholdsForUserService},
+        },
     },
     shared::{api::AppState, db::create_pool},
 };
@@ -54,7 +57,11 @@ pub async fn build_app_state(config: &AppConfig) -> Result<AppState, BootstrapEr
         session_token_hasher,
     ));
 
-    let create_household_service = Arc::new(CreateHouseholdService::new(household_repository));
+    let create_household_service =
+        Arc::new(CreateHouseholdService::new(household_repository.clone()));
+
+    let list_households_for_user_service =
+        Arc::new(ListHouseholdsForUserService::new(household_repository));
 
     Ok(AppState {
         register_user_service,
@@ -66,6 +73,7 @@ pub async fn build_app_state(config: &AppConfig) -> Result<AppState, BootstrapEr
             secure: config.session.cookie_secure,
         },
         create_household_service,
+        list_households_for_user_service,
     })
 }
 
