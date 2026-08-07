@@ -1,10 +1,13 @@
 use async_trait::async_trait;
-use sqlx::{PgPool, Row, postgres::PgRow};
+use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::modules::accounts::{
-    domain::{DisplayName, Email, PasswordHash, User, UserId},
-    ports::{UserRepository, UserRepositoryError},
+use crate::{
+    modules::accounts::{
+        domain::{DisplayName, Email, PasswordHash, User, UserId},
+        ports::{UserRepository, UserRepositoryError},
+    },
+    shared::db::{DatabaseErrorKind, classify_sqlx_error},
 };
 
 pub struct PostgresUserRepository {
@@ -20,7 +23,7 @@ impl PostgresUserRepository {
 #[async_trait]
 impl UserRepository for PostgresUserRepository {
     async fn insert(&self, user: &User) -> Result<(), UserRepositoryError> {
-        sqlx::query(
+        sqlx::query!(
             r#"
             INSERT INTO users (
                 id,
@@ -30,11 +33,11 @@ impl UserRepository for PostgresUserRepository {
             )
             VALUES ($1, $2, $3, $4)
             "#,
+            user.id().into_uuid(),
+            user.email().as_str(),
+            user.display_name().as_str(),
+            user.password_hash().as_str(),
         )
-        .bind(user.id().as_uuid())
-        .bind(user.email().as_str())
-        .bind(user.display_name().as_str())
-        .bind(user.password_hash().as_str())
         .execute(&self.pool)
         .await
         .map_err(map_insert_error)?;
@@ -43,66 +46,65 @@ impl UserRepository for PostgresUserRepository {
     }
 
     async fn find_by_id(&self, id: &UserId) -> Result<Option<User>, UserRepositoryError> {
-        let row = sqlx::query(
+        let row = sqlx::query_as!(
+            UserRow,
             r#"
             SELECT id, email, display_name, password_hash
             FROM users
             WHERE id = $1
             "#,
+            id.as_uuid(),
         )
-        .bind(id.as_uuid())
         .fetch_optional(&self.pool)
         .await
         .map_err(map_database_error)?;
 
-        row.map(row_to_user).transpose()
+        row.map(User::try_from).transpose()
     }
 
     async fn find_by_email(&self, email: &Email) -> Result<Option<User>, UserRepositoryError> {
-        let row = sqlx::query(
+        let row = sqlx::query_as!(
+            UserRow,
             r#"
             SELECT id, email, display_name, password_hash
             FROM users
             WHERE email = $1
             "#,
+            email.as_str(),
         )
-        .bind(email.as_str())
         .fetch_optional(&self.pool)
         .await
         .map_err(map_database_error)?;
 
-        row.map(row_to_user).transpose()
+        row.map(User::try_from).transpose()
     }
 }
 
-fn row_to_user(row: PgRow) -> Result<User, UserRepositoryError> {
-    let id: Uuid = row
-        .try_get("id")
-        .map_err(|_| UserRepositoryError::Database)?;
+#[derive(sqlx::FromRow)]
+struct UserRow {
+    id: Uuid,
+    email: String,
+    display_name: String,
+    password_hash: String,
+}
 
-    let email: String = row
-        .try_get("email")
-        .map_err(|_| UserRepositoryError::Database)?;
+impl TryFrom<UserRow> for User {
+    type Error = UserRepositoryError;
 
-    let display_name: String = row
-        .try_get("display_name")
-        .map_err(|_| UserRepositoryError::Database)?;
+    fn try_from(value: UserRow) -> Result<Self, Self::Error> {
+        let id = UserId::from_uuid(value.id);
 
-    let password_hash: String = row
-        .try_get("password_hash")
-        .map_err(|_| UserRepositoryError::Database)?;
+        let email =
+            Email::parse(&value.email).map_err(|_| UserRepositoryError::InvalidStoredData)?;
 
-    let id = UserId::from_uuid(id);
+        let display_name = DisplayName::parse(&value.display_name)
+            .map_err(|_| UserRepositoryError::InvalidStoredData)?;
 
-    let email = Email::parse(&email).map_err(|_| UserRepositoryError::InvalidStoredData)?;
+        let password_hash = PasswordHash::from_encoded(&value.password_hash)
+            .map_err(|_| UserRepositoryError::InvalidStoredData)?;
 
-    let display_name =
-        DisplayName::parse(&display_name).map_err(|_| UserRepositoryError::InvalidStoredData)?;
-
-    let password_hash = PasswordHash::from_encoded(&password_hash)
-        .map_err(|_| UserRepositoryError::InvalidStoredData)?;
-
-    Ok(User::new(id, email, display_name, password_hash))
+        Ok(User::new(id, email, display_name, password_hash))
+    }
 }
 
 const USERS_EMAIL_UNIQUE_CONSTRAINT: &str = "users_email_unique";
@@ -119,10 +121,11 @@ fn map_insert_error(error: sqlx::Error) -> UserRepositoryError {
 }
 
 fn map_database_error(error: sqlx::Error) -> UserRepositoryError {
-    match error {
-        sqlx::Error::PoolTimedOut | sqlx::Error::PoolClosed | sqlx::Error::Io(_) => {
-            UserRepositoryError::Unavailable
-        }
-        _ => UserRepositoryError::Database,
+    tracing::error!(
+        error = ?error, "user repository database operation failed"
+    );
+    match classify_sqlx_error(&error) {
+        DatabaseErrorKind::Unavailable => UserRepositoryError::Unavailable,
+        DatabaseErrorKind::Other => UserRepositoryError::Database,
     }
 }
