@@ -1,4 +1,5 @@
 use crate::bootstrap::BootstrapError;
+use crate::modules::households::api::households_router;
 use crate::{
     bootstrap::build_app_state, config::AppConfig, modules::accounts::api::accounts_router,
     shared::api::AppState,
@@ -41,6 +42,7 @@ fn build_router(state: AppState) -> Router {
     Router::new()
         .route("/api/v1/health", get(health))
         .nest("/api/v1/auth", accounts_router())
+        .nest("/api/v1/households", households_router())
         .layer(PropagateRequestIdLayer::x_request_id())
         .layer(TraceLayer::new_for_http())
         .layer(SetRequestIdLayer::x_request_id(MakeRequestUuid))

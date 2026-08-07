@@ -35,6 +35,8 @@ jobs:
 
     env:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/stockmate_test
+      SQLX_OFFLINE: true
+
     steps:
       - name: Check out repository
         uses: actions/checkout@v4
@@ -80,6 +82,7 @@ jobs:
         
     env:
       DATABASE_URL: postgres://postgres:postgres@localhost:5432/stockmate_test
+      SQLX_OFFLINE: true
       
     steps:
       - name: Check out repository

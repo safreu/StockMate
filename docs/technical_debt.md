@@ -13,6 +13,7 @@
 ## Persistence
 
 - Review SQLx error classification so connection, TLS, protocol, and network failures consistently map to repository unavailability.
+- Standardize application timestamp precision (PostgreSQL TIMESTAMPTZ uses microsecond precision), ideally as part of the future Clock abstraction.
 
 ## Testing
 
