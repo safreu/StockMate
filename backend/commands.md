@@ -173,3 +173,112 @@ cat cookies.txt
 ```
 
 The raw session token should only appear in the cookie file and HTTP response. The database should contain only its hash.
+
+## Create a personal household
+
+This route requires authentication. Log in and save the session cookie first.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST "$BASE_URL/api/v1/households" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "My Household",
+    "kind": "personal"
+  }'
+```
+
+Expected status: `201 Created`.
+
+Example response:
+
+```json
+{
+  "id": "<household-uuid>"
+}
+```
+
+## Create a shared household
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST "$BASE_URL/api/v1/households" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Shared Household",
+    "kind": "shared"
+  }'
+```
+
+Expected status: `201 Created`.
+
+Example response:
+
+```json
+{
+  "id": "<household-uuid>"
+}
+```
+
+## Create a second personal household
+
+After successfully creating a personal household, run:
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST "$BASE_URL/api/v1/households" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Another Personal Household",
+    "kind": "personal"
+  }'
+```
+
+Expected status: `409 Conflict`.
+
+## Create a household with an invalid name
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST "$BASE_URL/api/v1/households" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "   ",
+    "kind": "shared"
+  }'
+```
+
+Expected status: `400 Bad Request`.
+
+## Create a household with an invalid kind
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST "$BASE_URL/api/v1/households" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Test Household",
+    "kind": "invalid"
+  }'
+```
+
+Expected status: `400 Bad Request`.
+
+## Create a household without authentication
+
+```bash
+curl -i \
+  -X POST "$BASE_URL/api/v1/households" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Test Household",
+    "kind": "shared"
+  }'
+```
+
+Expected status: `401 Unauthorized`.

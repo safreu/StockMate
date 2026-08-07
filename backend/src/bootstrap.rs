@@ -2,14 +2,18 @@ use std::sync::Arc;
 
 use crate::{
     config::{AppConfig, SessionCookieConfig},
-    modules::accounts::{
-        adapters::{
-            Argon2PasswordHasher, PostgresSessionRepository, PostgresUserRepository,
-            SecureSessionTokenGenerator, Sha256SessionTokenHasher,
+    modules::{
+        accounts::{
+            adapters::{
+                Argon2PasswordHasher, PostgresSessionRepository, PostgresUserRepository,
+                SecureSessionTokenGenerator, Sha256SessionTokenHasher,
+            },
+            application::{
+                AuthenticateSessionService, CreateSessionService, LoginUserService,
+                RegisterUserService,
+            },
         },
-        application::{
-            AuthenticateSessionService, CreateSessionService, LoginUserService, RegisterUserService,
-        },
+        households::{adapters::PostgresHouseholdRepository, application::CreateHouseholdService},
     },
     shared::{api::AppState, db::create_pool},
 };
@@ -20,6 +24,8 @@ pub async fn build_app_state(config: &AppConfig) -> Result<AppState, BootstrapEr
     let user_repository = Arc::new(PostgresUserRepository::new(pool.clone()));
 
     let session_repository = Arc::new(PostgresSessionRepository::new(pool.clone()));
+
+    let household_repository = Arc::new(PostgresHouseholdRepository::new(pool));
 
     let password_hasher = Arc::new(Argon2PasswordHasher::new());
 
@@ -48,6 +54,8 @@ pub async fn build_app_state(config: &AppConfig) -> Result<AppState, BootstrapEr
         session_token_hasher,
     ));
 
+    let create_household_service = Arc::new(CreateHouseholdService::new(household_repository));
+
     Ok(AppState {
         register_user_service,
         login_user_service,
@@ -57,6 +65,7 @@ pub async fn build_app_state(config: &AppConfig) -> Result<AppState, BootstrapEr
             name: config.session.cookie_name.clone(),
             secure: config.session.cookie_secure,
         },
+        create_household_service,
     })
 }
 
