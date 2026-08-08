@@ -1,8 +1,11 @@
 use std::sync::Arc;
 
-use crate::modules::accounts::{
-    domain::{Email, UserId},
-    ports::{PasswordHasher, UserRepository},
+use crate::{
+    modules::accounts::{
+        domain::{Email, UserId},
+        ports::{PasswordHasher, UserRepository},
+    },
+    shared::application::InternalError,
 };
 
 pub struct LoginUserCommand {
@@ -35,7 +38,7 @@ impl LoginUserService {
             .await
             .map_err(|error| {
                 tracing::error!(error = ?error, "Failed to load user during login");
-                LoginUserError::RepositoryFailed
+                LoginUserError::Internal(InternalError::Failed)
             })?
             .ok_or(LoginUserError::InvalidCredentials)?;
 
@@ -48,11 +51,11 @@ impl LoginUserService {
         .await
         .map_err(|error| {
             tracing::error!(error = ?error, user_id = %user_id, "Password verification task failed");
-            LoginUserError::PasswordVerificationError
+            LoginUserError::Internal(InternalError::Failed)
         })?
         .map_err(|error| {
             tracing::error!(error = ?error, user_id = %user_id, "Password verification failed");
-            LoginUserError::PasswordVerificationError
+            LoginUserError::Internal(InternalError::Failed)
         })?;
 
         if verified {
@@ -67,18 +70,20 @@ impl LoginUserService {
 pub enum LoginUserError {
     #[error("Invalid credentials")]
     InvalidCredentials,
-    #[error("Password verification failed")]
-    PasswordVerificationError,
-    #[error("User repository failed")]
-    RepositoryFailed,
+
+    #[error(transparent)]
+    Internal(#[from] InternalError),
 }
 
 #[cfg(test)]
 mod tests {
-    use crate::modules::accounts::{
-        adapters::{Argon2PasswordHasher, InMemoryUserRepository},
-        domain::{DisplayName, PasswordHash, User},
-        ports::PasswordHasherError,
+    use crate::{
+        modules::accounts::{
+            adapters::{Argon2PasswordHasher, InMemoryUserRepository},
+            domain::{DisplayName, PasswordHash, User},
+            ports::PasswordHasherError,
+        },
+        test_helpers::build_login_service,
     };
 
     use super::*;
@@ -110,22 +115,9 @@ mod tests {
         )
     }
 
-    fn test_service() -> (
-        LoginUserService,
-        Arc<InMemoryUserRepository>,
-        Arc<Argon2PasswordHasher>,
-    ) {
-        let repository = Arc::new(InMemoryUserRepository::new());
-        let hasher = Arc::new(Argon2PasswordHasher::new());
-
-        let service = LoginUserService::new(repository.clone(), hasher.clone());
-
-        (service, repository, hasher)
-    }
-
     #[tokio::test]
     async fn correct_credentials_return_user_id() {
-        let (service, repository, hasher) = test_service();
+        let (service, repository, hasher) = build_login_service();
 
         let user = create_user(VALID_EMAIL, VALID_NAME, VALID_PASSWORD, &hasher);
 
@@ -143,7 +135,7 @@ mod tests {
 
     #[tokio::test]
     async fn wrong_email_returns_invalid_credentials() {
-        let (service, repository, hasher) = test_service();
+        let (service, repository, hasher) = build_login_service();
 
         let user = create_user(VALID_EMAIL, VALID_NAME, VALID_PASSWORD, &hasher);
 
@@ -161,7 +153,7 @@ mod tests {
 
     #[tokio::test]
     async fn wrong_password_returns_invalid_credentials() {
-        let (service, repository, hasher) = test_service();
+        let (service, repository, hasher) = build_login_service();
 
         let user = create_user(VALID_EMAIL, VALID_NAME, VALID_PASSWORD, &hasher);
 
@@ -179,7 +171,7 @@ mod tests {
 
     #[tokio::test]
     async fn invalid_email_returns_invalid_credentials() {
-        let (service, repository, hasher) = test_service();
+        let (service, repository, hasher) = build_login_service();
 
         let user = create_user(VALID_EMAIL, VALID_NAME, VALID_PASSWORD, &hasher);
 
@@ -216,7 +208,7 @@ mod tests {
 
         assert_eq!(
             verified_user,
-            Err(LoginUserError::PasswordVerificationError)
+            Err(LoginUserError::Internal(InternalError::Failed))
         )
     }
 

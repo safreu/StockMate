@@ -69,7 +69,7 @@ async fn shutdown_signal() {
 
 #[derive(Debug, thiserror::Error)]
 pub enum ApplicationError {
-    #[error("could not connect to PostgreSQL")]
+    #[error("application initialization failed")]
     Bootstrap(#[from] BootstrapError),
 
     #[error("could not bind the HTTP server")]

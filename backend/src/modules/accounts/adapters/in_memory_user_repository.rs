@@ -59,19 +59,9 @@ impl Default for InMemoryUserRepository {
 
 #[cfg(test)]
 mod tests {
-    use crate::modules::accounts::domain::{DisplayName, PasswordHash};
+    use crate::test_helpers::create_user;
 
     use super::*;
-
-    fn create_user(email: &str) -> User {
-        User::new(
-            UserId::new(),
-            Email::parse(email).expect("Email should be valid"),
-            DisplayName::parse("valid name").expect("Display name should be valid"),
-            PasswordHash::from_encoded("$test$password_hash")
-                .expect("Password hash should be valid"),
-        )
-    }
 
     #[tokio::test]
     async fn user_can_be_inserted() {

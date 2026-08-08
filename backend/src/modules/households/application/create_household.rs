@@ -2,14 +2,18 @@ use std::sync::Arc;
 
 use chrono::Utc;
 
-use crate::modules::{
-    accounts::domain::UserId,
-    households::{
-        domain::{
-            Household, HouseholdId, HouseholdKind, HouseholdMember, HouseholdName, HouseholdRole,
+use crate::{
+    modules::{
+        accounts::domain::UserId,
+        households::{
+            domain::{
+                Household, HouseholdId, HouseholdKind, HouseholdMember, HouseholdName,
+                HouseholdRole,
+            },
+            ports::{HouseholdRepository, HouseholdRepositoryError},
         },
-        ports::{HouseholdRepository, HouseholdRepositoryError},
     },
+    shared::application::InternalError,
 };
 
 pub struct CreateHouseholdCommand {
@@ -58,7 +62,7 @@ impl CreateHouseholdService {
                 owner_id = %command.owner_id,
                 "failed to construct household"
             );
-            CreateHouseholdError::InvalidHousehold
+            CreateHouseholdError::Internal(InternalError::Failed)
         })?;
 
         let owner = HouseholdMember::new(household_id, command.owner_id, HouseholdRole::Owner, now);
@@ -70,7 +74,7 @@ impl CreateHouseholdService {
                 HouseholdRepositoryError::PersonalHouseholdAlreadyExists => {
                     CreateHouseholdError::PersonalHouseholdAlreadyExists
                 }
-                _ => CreateHouseholdError::RepositoryFailed,
+                _ => CreateHouseholdError::Internal(InternalError::Failed),
             })?;
 
         Ok(household_id)
@@ -81,12 +85,10 @@ impl CreateHouseholdService {
 pub enum CreateHouseholdError {
     #[error("Invalid household name")]
     InvalidName,
-    #[error("Household construction failed")]
-    InvalidHousehold,
     #[error("Personal household already exists")]
     PersonalHouseholdAlreadyExists,
-    #[error("Household repository failed")]
-    RepositoryFailed,
+    #[error(transparent)]
+    Internal(#[from] InternalError),
 }
 
 #[cfg(test)]
@@ -211,7 +213,10 @@ mod tests {
 
         let result = service.execute(command).await;
 
-        assert_eq!(result, Err(CreateHouseholdError::RepositoryFailed))
+        assert_eq!(
+            result,
+            Err(CreateHouseholdError::Internal(InternalError::Failed))
+        )
     }
 
     struct FailingHouseholdRepository;

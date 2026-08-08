@@ -10,3 +10,10 @@ pub struct CreateHouseholdRequest {
 pub struct CreateHouseholdResponse {
     pub id: String,
 }
+
+#[derive(Debug, Serialize)]
+pub struct ListHouseholdResponse {
+    pub id: String,
+    pub name: String,
+    pub kind: String,
+}
