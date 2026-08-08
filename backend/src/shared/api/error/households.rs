@@ -1,4 +1,7 @@
-use crate::{modules::households::application::CreateHouseholdError, shared::api::error::ApiError};
+use crate::{
+    modules::households::application::{CreateHouseholdError, GetHouseholdError},
+    shared::api::error::ApiError,
+};
 
 impl From<CreateHouseholdError> for ApiError {
     fn from(error: CreateHouseholdError) -> Self {
@@ -11,6 +14,21 @@ impl From<CreateHouseholdError> for ApiError {
                 "personal_household_already_exists",
                 "A personal household already exists",
             ),
+        }
+    }
+}
+
+impl From<GetHouseholdError> for ApiError {
+    fn from(error: GetHouseholdError) -> Self {
+        match error {
+            GetHouseholdError::NotFound => {
+                ApiError::not_found("household_not_found", "The household was not found")
+            }
+            GetHouseholdError::Forbidden => ApiError::forbidden(
+                "household_access_forbidden",
+                "You do not have access to this household",
+            ),
+            GetHouseholdError::Internal(_) => ApiError::internal_error(),
         }
     }
 }
