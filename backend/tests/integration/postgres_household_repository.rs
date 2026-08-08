@@ -220,3 +220,58 @@ async fn transaction_rolls_back_if_owner_membership_insert_fails(pool: PgPool) {
 
     assert!(found.is_none())
 }
+
+#[sqlx::test]
+async fn existing_member_can_be_found(pool: PgPool) {
+    let user_repository = PostgresUserRepository::new(pool.clone());
+    let household_repository = PostgresHouseholdRepository::new(pool);
+
+    let user = insert_test_user(&user_repository).await;
+
+    let (household, owner) =
+        insert_owned_household(&household_repository, user.id(), HouseholdKind::Shared).await;
+
+    let result = household_repository
+        .find_member(&household.id(), &user.id())
+        .await
+        .expect("Membership lookup should succeed");
+
+    assert_eq!(result, Some(owner))
+}
+
+#[sqlx::test]
+async fn unknown_member_returns_none(pool: PgPool) {
+    let household_repository = PostgresHouseholdRepository::new(pool);
+
+    let result = household_repository
+        .find_member(&HouseholdId::new(), &UserId::new())
+        .await
+        .expect("Membership lookup should succeed");
+
+    assert!(result.is_none())
+}
+
+#[sqlx::test]
+async fn member_lookup_is_scoped_to_household(pool: PgPool) {
+    let user_repository = PostgresUserRepository::new(pool.clone());
+    let household_repository = PostgresHouseholdRepository::new(pool);
+
+    let user = insert_test_user(&user_repository).await;
+
+    let (household, _) =
+        insert_owned_household(&household_repository, user.id(), HouseholdKind::Shared).await;
+
+    let result = household_repository
+        .find_member(&HouseholdId::new(), &user.id())
+        .await
+        .expect("Membership lookup should succeed");
+
+    assert!(result.is_none());
+
+    let original = household_repository
+        .find_member(&household.id(), &user.id())
+        .await
+        .expect("Membership lookup should succeed");
+
+    assert!(original.is_some())
+}

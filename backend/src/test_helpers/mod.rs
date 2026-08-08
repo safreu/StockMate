@@ -6,3 +6,5 @@ pub use accounts::{
 };
 
 mod households;
+pub use households::FailingHouseholdRepository;
+pub use households::{build_create_household_service, build_list_households_service};
