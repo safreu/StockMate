@@ -6,3 +6,8 @@ pub use list_households::{ListHouseholdsForUserCommand, ListHouseholdsForUserSer
 
 mod get_household;
 pub use get_household::{GetHouseholdCommand, GetHouseholdError, GetHouseholdService};
+
+mod add_member;
+pub use add_member::{
+    AddHouseholdMemberCommand, AddHouseholdMemberError, AddHouseholdMemberService,
+};

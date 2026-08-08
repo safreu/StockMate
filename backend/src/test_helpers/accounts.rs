@@ -1,22 +1,27 @@
 use std::sync::Arc;
 
+use async_trait::async_trait;
 use chrono::{Duration, TimeZone, Utc};
 
-use crate::modules::accounts::{
-    adapters::{
-        Argon2PasswordHasher, InMemorySessionRepository, InMemoryUserRepository,
-        Sha256SessionTokenHasher,
+use crate::{
+    modules::accounts::{
+        adapters::{
+            Argon2PasswordHasher, InMemorySessionRepository, InMemoryUserRepository,
+            Sha256SessionTokenHasher,
+        },
+        application::{
+            AuthenticateSessionService, CreateSessionService, LoginUserService, RegisterUserService,
+        },
+        domain::{
+            DisplayName, Email, PasswordHash, Session, SessionId, SessionToken, SessionTokenHash,
+            User, UserId,
+        },
+        ports::{
+            PasswordHasher, PasswordHasherError, SessionTokenGenerator, SessionTokenGeneratorError,
+            UserRepository, UserRepositoryError,
+        },
     },
-    application::{
-        AuthenticateSessionService, CreateSessionService, LoginUserService, RegisterUserService,
-    },
-    domain::{
-        DisplayName, Email, PasswordHash, Session, SessionId, SessionToken, SessionTokenHash, User,
-        UserId,
-    },
-    ports::{
-        PasswordHasher, PasswordHasherError, SessionTokenGenerator, SessionTokenGeneratorError,
-    },
+    shared::db::PersistenceError,
 };
 
 pub fn create_session(token_hash: &str) -> Session {
@@ -146,4 +151,22 @@ pub fn build_register_service() -> (
     let service = RegisterUserService::new(repository.clone(), hasher.clone());
 
     (service, repository, hasher)
+}
+
+pub struct FailingUserRepository;
+
+#[async_trait]
+#[allow(unused)]
+impl UserRepository for FailingUserRepository {
+    async fn insert(&self, user: &User) -> Result<(), UserRepositoryError> {
+        Err(UserRepositoryError::Persistence(PersistenceError::Failed))
+    }
+
+    async fn find_by_id(&self, id: &UserId) -> Result<Option<User>, UserRepositoryError> {
+        Err(UserRepositoryError::Persistence(PersistenceError::Failed))
+    }
+
+    async fn find_by_email(&self, email: &Email) -> Result<Option<User>, UserRepositoryError> {
+        Err(UserRepositoryError::Persistence(PersistenceError::Failed))
+    }
 }

@@ -3,9 +3,11 @@ use std::sync::Arc;
 use async_trait::async_trait;
 use chrono::Utc;
 
+use crate::modules::accounts::adapters::InMemoryUserRepository;
 use crate::modules::accounts::domain::UserId;
 use crate::modules::households::application::{
-    CreateHouseholdService, GetHouseholdService, ListHouseholdsForUserService,
+    AddHouseholdMemberService, CreateHouseholdService, GetHouseholdService,
+    ListHouseholdsForUserService,
 };
 use crate::modules::households::domain::{
     HouseholdId, HouseholdKind, HouseholdName, HouseholdRole,
@@ -71,6 +73,12 @@ impl HouseholdRepository for FailingHouseholdRepository {
             PersistenceError::Failed,
         ))
     }
+
+    async fn add_member(&self, member: &HouseholdMember) -> Result<(), HouseholdRepositoryError> {
+        Err(HouseholdRepositoryError::Persistence(
+            PersistenceError::Failed,
+        ))
+    }
 }
 
 pub fn build_create_household_service() -> (CreateHouseholdService, Arc<InMemoryHouseholdRepository>)
@@ -126,4 +134,67 @@ pub fn create_owned_household(
     .expect("Test household should be valid");
 
     (household, owner)
+}
+
+pub fn build_add_member_service() -> (
+    AddHouseholdMemberService,
+    Arc<InMemoryHouseholdRepository>,
+    Arc<InMemoryUserRepository>,
+) {
+    let household_repository = Arc::new(InMemoryHouseholdRepository::new());
+    let user_repository = Arc::new(InMemoryUserRepository::new());
+
+    let service =
+        AddHouseholdMemberService::new(household_repository.clone(), user_repository.clone());
+
+    (service, household_repository, user_repository)
+}
+
+pub struct DuplicateOnAddHouseholdRepository {
+    pub inner: Arc<InMemoryHouseholdRepository>,
+}
+
+#[async_trait::async_trait]
+impl HouseholdRepository for DuplicateOnAddHouseholdRepository {
+    async fn create_with_owner(
+        &self,
+        household: &Household,
+        owner: &HouseholdMember,
+    ) -> Result<(), HouseholdRepositoryError> {
+        self.inner.create_with_owner(household, owner).await
+    }
+
+    async fn find_by_id(
+        &self,
+        id: &HouseholdId,
+    ) -> Result<Option<Household>, HouseholdRepositoryError> {
+        self.inner.find_by_id(id).await
+    }
+
+    async fn find_personal_by_owner(
+        &self,
+        owner: &UserId,
+    ) -> Result<Option<Household>, HouseholdRepositoryError> {
+        self.inner.find_personal_by_owner(owner).await
+    }
+
+    async fn find_for_user(
+        &self,
+        user_id: &UserId,
+    ) -> Result<Vec<Household>, HouseholdRepositoryError> {
+        self.inner.find_for_user(user_id).await
+    }
+
+    async fn find_member(
+        &self,
+        household_id: &HouseholdId,
+        user_id: &UserId,
+    ) -> Result<Option<HouseholdMember>, HouseholdRepositoryError> {
+        self.inner.find_member(household_id, user_id).await
+    }
+
+    #[allow(unused_variables)]
+    async fn add_member(&self, member: &HouseholdMember) -> Result<(), HouseholdRepositoryError> {
+        Err(HouseholdRepositoryError::MemberAlreadyExists)
+    }
 }

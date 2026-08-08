@@ -375,3 +375,92 @@ curl -i \
 ```
 
 Expected status: `401 Unauthorized`.
+
+## Add a member to a shared household
+
+The authenticated user must be an owner of the household.
+
+Replace `<household-uuid>` with the ID of a shared household.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST "$BASE_URL/api/v1/households/<household-uuid>/members" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "member@example.com"
+  }'
+```
+
+Expected status: `204 No Content`.
+
+## Add an unknown user to a household
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST "$BASE_URL/api/v1/households/<household-uuid>/members" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "unknown@example.com"
+  }'
+```
+
+Expected status: `404 Not Found`.
+
+## Add an existing member again
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST "$BASE_URL/api/v1/households/<household-uuid>/members" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "member@example.com"
+  }'
+```
+
+Expected status: `409 Conflict`.
+
+## Add a member to a personal household
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST "$BASE_URL/api/v1/households/<personal-household-uuid>/members" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "member@example.com"
+  }'
+```
+
+Expected status: `409 Conflict`.
+
+## Add a member without owner permission
+
+Use a session belonging to a household member who is not an owner.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST "$BASE_URL/api/v1/households/<household-uuid>/members" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "another@example.com"
+  }'
+```
+
+Expected status: `403 Forbidden`.
+
+## Add a member without authentication
+
+```bash
+curl -i \
+  -X POST "$BASE_URL/api/v1/households/<household-uuid>/members" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "email": "member@example.com"
+  }'
+```
+
+Expected status: `401 Unauthorized`.

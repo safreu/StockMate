@@ -1,5 +1,7 @@
 use crate::{
-    modules::households::application::{CreateHouseholdError, GetHouseholdError},
+    modules::households::application::{
+        AddHouseholdMemberError, CreateHouseholdError, GetHouseholdError,
+    },
     shared::api::error::ApiError,
 };
 
@@ -29,6 +31,41 @@ impl From<GetHouseholdError> for ApiError {
                 "You do not have access to this household",
             ),
             GetHouseholdError::Internal(_) => ApiError::internal_error(),
+        }
+    }
+}
+
+impl From<AddHouseholdMemberError> for ApiError {
+    fn from(error: AddHouseholdMemberError) -> Self {
+        match error {
+            AddHouseholdMemberError::InvalidEmail => {
+                ApiError::bad_request("invalid_email", "The email address in invalid")
+            }
+
+            AddHouseholdMemberError::HouseholdNotFound => {
+                ApiError::not_found("household_not_found", "The household was not found")
+            }
+
+            AddHouseholdMemberError::Forbidden => ApiError::forbidden(
+                "household_access_forbidden",
+                "You do not have permission to modify this household",
+            ),
+
+            AddHouseholdMemberError::PersonalHousehold => ApiError::conflict(
+                "personal_household_does_not_support_members",
+                "Members cannot be added to a personal household",
+            ),
+
+            AddHouseholdMemberError::UserNotFound => {
+                ApiError::not_found("user_not_found", "The user was not found")
+            }
+
+            AddHouseholdMemberError::MemberAlreadyExists => ApiError::conflict(
+                "household_member_already_exists",
+                "The user is already a member of this household",
+            ),
+
+            AddHouseholdMemberError::Internal(_) => ApiError::internal_error(),
         }
     }
 }

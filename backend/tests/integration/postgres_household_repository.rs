@@ -28,6 +28,17 @@ async fn insert_test_user(repository: &PostgresUserRepository) -> User {
     user
 }
 
+async fn insert_test_user_with_email(repository: &PostgresUserRepository, email: &str) -> User {
+    let user = test_user(email);
+
+    repository
+        .insert(&user)
+        .await
+        .expect("Test user should be insertable");
+
+    user
+}
+
 fn create_owned_household(user_id: UserId, kind: HouseholdKind) -> (Household, HouseholdMember) {
     let household_id = HouseholdId::new();
     let now = Utc::now().trunc_subsecs(6);
@@ -274,4 +285,109 @@ async fn member_lookup_is_scoped_to_household(pool: PgPool) {
         .expect("Membership lookup should succeed");
 
     assert!(original.is_some())
+}
+
+#[sqlx::test]
+async fn member_can_be_added_to_existing_household(pool: PgPool) {
+    let user_repository = PostgresUserRepository::new(pool.clone());
+    let household_repository = PostgresHouseholdRepository::new(pool);
+
+    let owner = insert_test_user(&user_repository).await;
+    let member = insert_test_user_with_email(&user_repository, "different.valid@email.com").await;
+
+    let (household, _) =
+        insert_owned_household(&household_repository, owner.id(), HouseholdKind::Shared).await;
+
+    let household_member = HouseholdMember::new(
+        household.id(),
+        member.id(),
+        HouseholdRole::Member,
+        Utc::now(),
+    );
+
+    let result = household_repository.add_member(&household_member).await;
+
+    assert!(result.is_ok())
+}
+
+#[sqlx::test]
+async fn added_member_can_be_found(pool: PgPool) {
+    let user_repository = PostgresUserRepository::new(pool.clone());
+    let household_repository = PostgresHouseholdRepository::new(pool);
+
+    let owner = insert_test_user(&user_repository).await;
+    let member = insert_test_user_with_email(&user_repository, "different.valid@email.com").await;
+
+    let (household, _) =
+        insert_owned_household(&household_repository, owner.id(), HouseholdKind::Shared).await;
+
+    let household_member = HouseholdMember::new(
+        household.id(),
+        member.id(),
+        HouseholdRole::Member,
+        Utc::now().trunc_subsecs(6),
+    );
+
+    household_repository
+        .add_member(&household_member)
+        .await
+        .expect("Adding member should succeed");
+
+    let stored = household_repository
+        .find_member(&household.id(), &member.id())
+        .await
+        .expect("Membership lookup should succeed");
+
+    assert_eq!(stored, Some(household_member))
+}
+
+#[sqlx::test]
+async fn duplicate_member_is_rejected(pool: PgPool) {
+    let user_repository = PostgresUserRepository::new(pool.clone());
+    let household_repository = PostgresHouseholdRepository::new(pool);
+
+    let owner = insert_test_user(&user_repository).await;
+    let member = insert_test_user_with_email(&user_repository, "different.valid@email.com").await;
+
+    let (household, _) =
+        insert_owned_household(&household_repository, owner.id(), HouseholdKind::Shared).await;
+
+    let household_member = HouseholdMember::new(
+        household.id(),
+        member.id(),
+        HouseholdRole::Member,
+        Utc::now(),
+    );
+
+    household_repository
+        .add_member(&household_member)
+        .await
+        .expect("Adding member should succeed");
+
+    let result = household_repository.add_member(&household_member).await;
+
+    assert_eq!(result, Err(HouseholdRepositoryError::MemberAlreadyExists))
+}
+
+#[sqlx::test]
+async fn member_cannot_be_added_to_unknown_household(pool: PgPool) {
+    let user_repository = PostgresUserRepository::new(pool.clone());
+    let household_repository = PostgresHouseholdRepository::new(pool);
+
+    let owner = insert_test_user(&user_repository).await;
+    let member = insert_test_user_with_email(&user_repository, "different.valid@email.com").await;
+
+    let (_, _) =
+        insert_owned_household(&household_repository, owner.id(), HouseholdKind::Shared).await;
+
+    let household_member = HouseholdMember::new(
+        HouseholdId::new(),
+        member.id(),
+        HouseholdRole::Member,
+        Utc::now(),
+    );
+
+    let result = household_repository.add_member(&household_member).await;
+
+    assert_eq!(result, Err(HouseholdRepositoryError::HouseholdNotFound))
 }

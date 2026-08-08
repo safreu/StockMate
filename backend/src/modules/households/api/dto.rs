@@ -17,3 +17,8 @@ pub struct HouseholdResponse {
     pub name: String,
     pub kind: String,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct AddHouseholdMemberRequest {
+    pub email: String,
+}
