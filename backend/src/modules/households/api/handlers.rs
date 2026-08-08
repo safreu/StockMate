@@ -9,9 +9,13 @@ use crate::{
     modules::{
         accounts::api::CurrentUser,
         households::{
-            api::dto::{CreateHouseholdRequest, CreateHouseholdResponse, HouseholdResponse},
+            api::dto::{
+                AddHouseholdMemberRequest, CreateHouseholdRequest, CreateHouseholdResponse,
+                HouseholdResponse,
+            },
             application::{
-                CreateHouseholdCommand, GetHouseholdCommand, ListHouseholdsForUserCommand,
+                AddHouseholdMemberCommand, CreateHouseholdCommand, GetHouseholdCommand,
+                ListHouseholdsForUserCommand,
             },
             domain::{HouseholdId, HouseholdKind},
         },
@@ -98,4 +102,26 @@ pub async fn get_household(
         name: household.name().as_str().to_owned(),
         kind: household.kind().to_string(),
     }))
+}
+
+pub async fn add_household_member(
+    State(state): State<AppState>,
+    current_user: CurrentUser,
+    Path(household_id): Path<Uuid>,
+    Json(request): Json<AddHouseholdMemberRequest>,
+) -> Result<StatusCode, ApiError> {
+    let command = AddHouseholdMemberCommand {
+        requester_id: current_user.user_id(),
+        household_id: HouseholdId::from_uuid(household_id),
+        member_email: request.email,
+    };
+
+    state
+        .households
+        .add_household_member
+        .execute(command)
+        .await
+        .map_err(ApiError::from)?;
+
+    Ok(StatusCode::NO_CONTENT)
 }

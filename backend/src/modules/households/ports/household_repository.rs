@@ -36,6 +36,8 @@ pub trait HouseholdRepository: Send + Sync {
         household_id: &HouseholdId,
         user_id: &UserId,
     ) -> Result<Option<HouseholdMember>, HouseholdRepositoryError>;
+
+    async fn add_member(&self, member: &HouseholdMember) -> Result<(), HouseholdRepositoryError>;
 }
 
 #[derive(Debug, PartialEq, Eq, thiserror::Error)]
@@ -48,6 +50,10 @@ pub enum HouseholdRepositoryError {
     InvalidAggregate,
     #[error("Household already exists")]
     HouseholdAlreadyExists,
+    #[error("Household member already exists")]
+    MemberAlreadyExists,
+    #[error("Household does not exist")]
+    HouseholdNotFound,
     #[error(transparent)]
     Persistence(#[from] PersistenceError),
 }

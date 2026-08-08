@@ -27,3 +27,7 @@
 ## Axum
 
 - Axum Path<Uuid> extractor rejects malformed uuids, replace it with custom extractor to handle behavior explicitly.
+
+## Features
+
+- Consider invitation-based household membership with pending/accept/reject states instead of immediate membership assignment.

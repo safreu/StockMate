@@ -186,6 +186,29 @@ impl HouseholdRepository for PostgresHouseholdRepository {
 
         row.map(HouseholdMember::try_from).transpose()
     }
+
+    async fn add_member(&self, member: &HouseholdMember) -> Result<(), HouseholdRepositoryError> {
+        sqlx::query!(
+            r#"
+            INSERT INTO household_members (
+                household_id,
+                user_id,
+                role,
+                created_at
+            )
+            VALUES ($1, $2, $3, $4)
+            "#,
+            member.household_id().into_uuid(),
+            member.user_id().into_uuid(),
+            member.role().as_str(),
+            member.created_at(),
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(map_add_member_error)?;
+
+        Ok(())
+    }
 }
 
 const HOUSEHOLDS_PERSONAL_OWNER_UNIQUE_INDEX: &str = "households_personal_owner_unique_idx";
@@ -201,6 +224,25 @@ fn map_insert_error(error: sqlx::Error) -> HouseholdRepositoryError {
             }
             Some(HOUSEHOLDS_PERSONAL_OWNER_UNIQUE_INDEX) => {
                 return HouseholdRepositoryError::PersonalHouseholdAlreadyExists;
+            }
+            _ => {}
+        }
+    };
+
+    map_sqlx_error(error).into()
+}
+
+const HOUSEHOLD_MEMBERS_PRIMARY_KEY: &str = "household_members_pkey";
+const HOUSEHOLD_MEMBERS_HOUSEHOLD_FK: &str = "household_members_household_fk";
+
+fn map_add_member_error(error: sqlx::Error) -> HouseholdRepositoryError {
+    if let Some(database_error) = error.as_database_error() {
+        match database_error.constraint() {
+            Some(HOUSEHOLD_MEMBERS_PRIMARY_KEY) if database_error.is_unique_violation() => {
+                return HouseholdRepositoryError::MemberAlreadyExists;
+            }
+            Some(HOUSEHOLD_MEMBERS_HOUSEHOLD_FK) => {
+                return HouseholdRepositoryError::HouseholdNotFound;
             }
             _ => {}
         }
