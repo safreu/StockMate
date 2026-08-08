@@ -30,6 +30,12 @@ pub trait HouseholdRepository: Send + Sync {
         &self,
         user_id: &UserId,
     ) -> Result<Vec<Household>, HouseholdRepositoryError>;
+
+    async fn find_member(
+        &self,
+        household_id: &HouseholdId,
+        user_id: &UserId,
+    ) -> Result<Option<HouseholdMember>, HouseholdRepositoryError>;
 }
 
 #[derive(Debug, PartialEq, Eq, thiserror::Error)]

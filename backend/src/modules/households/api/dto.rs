@@ -12,7 +12,7 @@ pub struct CreateHouseholdResponse {
 }
 
 #[derive(Debug, Serialize)]
-pub struct ListHouseholdResponse {
+pub struct HouseholdResponse {
     pub id: String,
     pub name: String,
     pub kind: String,

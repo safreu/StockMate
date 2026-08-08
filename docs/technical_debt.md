@@ -22,3 +22,8 @@
 ## Documentation
 
 - Add Rustdoc documentation for public ports and clearly document their behavior and error contracts.
+
+
+## Axum
+
+- Axum Path<Uuid> extractor rejects malformed uuids, replace it with custom extractor to handle behavior explicitly.

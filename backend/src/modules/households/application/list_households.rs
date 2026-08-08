@@ -36,61 +36,16 @@ impl ListHouseholdsForUserService {
 
 #[cfg(test)]
 mod tests {
-    use async_trait::async_trait;
-    use chrono::Utc;
 
     use super::*;
-    use crate::modules::households::domain::HouseholdId;
-    use crate::{
-        modules::households::{
-            adapters::InMemoryHouseholdRepository,
-            domain::{HouseholdKind, HouseholdMember, HouseholdName, HouseholdRole},
-            ports::HouseholdRepositoryError,
-        },
-        shared::db::PersistenceError,
+    use crate::modules::households::domain::HouseholdKind;
+    use crate::test_helpers::{
+        FailingHouseholdRepository, build_list_households_service, create_owned_household,
     };
-
-    fn test_service() -> (
-        ListHouseholdsForUserService,
-        Arc<InMemoryHouseholdRepository>,
-    ) {
-        let repository = Arc::new(InMemoryHouseholdRepository::new());
-
-        let service = ListHouseholdsForUserService::new(repository.clone());
-
-        (service, repository)
-    }
-
-    fn create_owned_household(
-        user_id: UserId,
-        kind: HouseholdKind,
-    ) -> (Household, HouseholdMember) {
-        let household_id = HouseholdId::new();
-        let now = Utc::now();
-
-        let owner = HouseholdMember::new(household_id, user_id, HouseholdRole::Owner, now);
-
-        let personal_owner_id = match kind {
-            HouseholdKind::Personal => Some(user_id),
-            HouseholdKind::Shared => None,
-        };
-
-        let household = Household::new(
-            household_id,
-            HouseholdName::parse("Test household").expect("Test household name should be valid"),
-            kind,
-            personal_owner_id,
-            now,
-            now,
-        )
-        .expect("Test household should be valid");
-
-        (household, owner)
-    }
 
     #[tokio::test]
     async fn households_for_user_are_returned() {
-        let (service, repository) = test_service();
+        let (service, repository) = build_list_households_service();
 
         let user_id = UserId::new();
 
@@ -133,42 +88,5 @@ mod tests {
         let result = service.execute(command).await;
 
         assert_eq!(result, Err(InternalError::Failed))
-    }
-
-    struct FailingHouseholdRepository;
-
-    #[async_trait]
-    #[allow(unused)]
-    impl HouseholdRepository for FailingHouseholdRepository {
-        async fn create_with_owner(
-            &self,
-            household: &Household,
-            owner: &HouseholdMember,
-        ) -> Result<(), HouseholdRepositoryError> {
-            unreachable!("Not used in this test")
-        }
-
-        async fn find_by_id(
-            &self,
-            id: &HouseholdId,
-        ) -> Result<Option<Household>, HouseholdRepositoryError> {
-            unreachable!("Not used in this test")
-        }
-
-        async fn find_personal_by_owner(
-            &self,
-            owner: &UserId,
-        ) -> Result<Option<Household>, HouseholdRepositoryError> {
-            unreachable!("Not used in this test")
-        }
-
-        async fn find_for_user(
-            &self,
-            user_id: &UserId,
-        ) -> Result<Vec<Household>, HouseholdRepositoryError> {
-            Err(HouseholdRepositoryError::Persistence(
-                PersistenceError::Failed,
-            ))
-        }
     }
 }

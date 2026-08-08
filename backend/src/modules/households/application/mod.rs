@@ -3,3 +3,6 @@ pub use create_household::{CreateHouseholdCommand, CreateHouseholdError, CreateH
 
 mod list_households;
 pub use list_households::{ListHouseholdsForUserCommand, ListHouseholdsForUserService};
+
+mod get_household;
+pub use get_household::{GetHouseholdCommand, GetHouseholdError, GetHouseholdService};

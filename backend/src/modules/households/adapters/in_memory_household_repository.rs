@@ -117,6 +117,18 @@ impl HouseholdRepository for InMemoryHouseholdRepository {
 
         Ok(households)
     }
+
+    async fn find_member(
+        &self,
+        household_id: &HouseholdId,
+        user_id: &UserId,
+    ) -> Result<Option<HouseholdMember>, HouseholdRepositoryError> {
+        let state = self.state.read().await;
+
+        let member = state.members.get(&(*household_id, *user_id));
+
+        Ok(member.cloned())
+    }
 }
 
 #[cfg(test)]
@@ -350,5 +362,60 @@ mod tests {
             .expect("Household lookup should succeed");
 
         assert!(result.is_empty())
+    }
+
+    #[tokio::test]
+    async fn existing_member_ship_is_returned() {
+        let repository = InMemoryHouseholdRepository::default();
+
+        let (household, owner) = create_owned_household(UserId::new(), HouseholdKind::Shared);
+
+        repository
+            .create_with_owner(&household, &owner)
+            .await
+            .expect("Household creation should succeed");
+
+        let result = repository
+            .find_member(&household.id(), &owner.user_id())
+            .await
+            .expect("Household lookup should succeed");
+
+        assert_eq!(result, Some(owner))
+    }
+
+    #[tokio::test]
+    async fn unknown_member_returns_none() {
+        let repository = InMemoryHouseholdRepository::default();
+
+        let household_id = HouseholdId::new();
+        let user_id = UserId::new();
+
+        let result = repository
+            .find_member(&household_id, &user_id)
+            .await
+            .expect("Household lookup should succeed");
+
+        assert!(result.is_none())
+    }
+
+    #[tokio::test]
+    async fn member_lookup_is_scoped_to_household() {
+        let repository = InMemoryHouseholdRepository::default();
+
+        let user_id = UserId::new();
+
+        let (household, owner) = create_owned_household(user_id, HouseholdKind::Shared);
+
+        repository
+            .create_with_owner(&household, &owner)
+            .await
+            .expect("Household creation should succeed");
+
+        let result = repository
+            .find_member(&HouseholdId::new(), &owner.user_id())
+            .await
+            .expect("Household lookup should succeed");
+
+        assert!(result.is_none())
     }
 }

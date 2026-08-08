@@ -320,3 +320,58 @@ curl -i \
 ```
 
 Expected status: `401 Unauthorized`.
+
+## Get a household by ID
+
+Returns a household if the authenticated user is a member.
+
+Replace `<household-uuid>` with the ID returned when creating or listing households.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  "$BASE_URL/api/v1/households/<household-uuid>"
+```
+
+Expected status: `200 OK`.
+
+Example response:
+
+```json
+{
+  "id": "<household-uuid>",
+  "name": "My Household",
+  "kind": "personal"
+}
+```
+
+## Get an unknown household
+
+```bash
+curl -i \
+  -b cookies.txt \
+  "$BASE_URL/api/v1/households/00000000-0000-0000-0000-000000000000"
+```
+
+Expected status: `404 Not Found`.
+
+## Get a household without membership
+
+Use the ID of a household belonging to another user.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  "$BASE_URL/api/v1/households/<other-household-uuid>"
+```
+
+Expected status: `403 Forbidden`.
+
+## Get a household without authentication
+
+```bash
+curl -i \
+  "$BASE_URL/api/v1/households/<household-uuid>"
+```
+
+Expected status: `401 Unauthorized`.

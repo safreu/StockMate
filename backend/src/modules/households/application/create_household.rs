@@ -93,21 +93,10 @@ pub enum CreateHouseholdError {
 
 #[cfg(test)]
 mod tests {
-    use async_trait::async_trait;
 
-    use crate::{
-        modules::households::adapters::InMemoryHouseholdRepository, shared::db::PersistenceError,
-    };
+    use crate::test_helpers::{FailingHouseholdRepository, build_create_household_service};
 
     use super::*;
-
-    fn test_service() -> (CreateHouseholdService, Arc<InMemoryHouseholdRepository>) {
-        let repository = Arc::new(InMemoryHouseholdRepository::new());
-
-        let service = CreateHouseholdService::new(repository.clone());
-
-        (service, repository)
-    }
 
     fn create_command(owner_id: UserId, kind: HouseholdKind) -> CreateHouseholdCommand {
         CreateHouseholdCommand {
@@ -119,7 +108,7 @@ mod tests {
 
     #[tokio::test]
     async fn personal_household_creation_succeeds() {
-        let (service, repository) = test_service();
+        let (service, repository) = build_create_household_service();
 
         let owner_id = UserId::new();
 
@@ -141,7 +130,7 @@ mod tests {
 
     #[tokio::test]
     async fn shared_household_creation_succeeds() {
-        let (service, repository) = test_service();
+        let (service, repository) = build_create_household_service();
 
         let owner_id = UserId::new();
 
@@ -163,7 +152,7 @@ mod tests {
 
     #[tokio::test]
     async fn invalid_name_returns_invalid_name() {
-        let (service, _) = test_service();
+        let (service, _) = build_create_household_service();
 
         let owner_id = UserId::new();
 
@@ -180,7 +169,7 @@ mod tests {
 
     #[tokio::test]
     async fn second_personal_household_returns_personal_household_already_exists() {
-        let (service, _) = test_service();
+        let (service, _) = build_create_household_service();
 
         let owner_id = UserId::new();
 
@@ -217,42 +206,5 @@ mod tests {
             result,
             Err(CreateHouseholdError::Internal(InternalError::Failed))
         )
-    }
-
-    struct FailingHouseholdRepository;
-
-    #[async_trait]
-    #[allow(unused)]
-    impl HouseholdRepository for FailingHouseholdRepository {
-        async fn create_with_owner(
-            &self,
-            household: &Household,
-            owner: &HouseholdMember,
-        ) -> Result<(), HouseholdRepositoryError> {
-            Err(HouseholdRepositoryError::Persistence(
-                PersistenceError::Failed,
-            ))
-        }
-
-        async fn find_by_id(
-            &self,
-            id: &HouseholdId,
-        ) -> Result<Option<Household>, HouseholdRepositoryError> {
-            unreachable!("Not used in this test")
-        }
-
-        async fn find_personal_by_owner(
-            &self,
-            owner: &UserId,
-        ) -> Result<Option<Household>, HouseholdRepositoryError> {
-            unreachable!("Not used in this test")
-        }
-
-        async fn find_for_user(
-            &self,
-            user_id: &UserId,
-        ) -> Result<Vec<Household>, HouseholdRepositoryError> {
-            unreachable!("Not used in this test")
-        }
     }
 }

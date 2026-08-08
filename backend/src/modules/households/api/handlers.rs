@@ -1,12 +1,19 @@
-use axum::{Json, extract::State, http::StatusCode};
+use axum::{
+    Json,
+    extract::{Path, State},
+    http::StatusCode,
+};
+use uuid::Uuid;
 
 use crate::{
     modules::{
         accounts::api::CurrentUser,
         households::{
-            api::dto::{CreateHouseholdRequest, CreateHouseholdResponse, ListHouseholdResponse},
-            application::{CreateHouseholdCommand, ListHouseholdsForUserCommand},
-            domain::HouseholdKind,
+            api::dto::{CreateHouseholdRequest, CreateHouseholdResponse, HouseholdResponse},
+            application::{
+                CreateHouseholdCommand, GetHouseholdCommand, ListHouseholdsForUserCommand,
+            },
+            domain::{HouseholdId, HouseholdKind},
         },
     },
     shared::api::{ApiError, AppState},
@@ -45,7 +52,7 @@ pub async fn create_household(
 pub async fn list_households(
     State(state): State<AppState>,
     current_user: CurrentUser,
-) -> Result<Json<Vec<ListHouseholdResponse>>, ApiError> {
+) -> Result<Json<Vec<HouseholdResponse>>, ApiError> {
     let command = ListHouseholdsForUserCommand {
         user_id: current_user.user_id(),
     };
@@ -59,7 +66,7 @@ pub async fn list_households(
 
     let response = households
         .into_iter()
-        .map(|household| ListHouseholdResponse {
+        .map(|household| HouseholdResponse {
             id: household.id().to_string(),
             name: household.name().as_str().to_owned(),
             kind: household.kind().to_string(),
@@ -67,4 +74,28 @@ pub async fn list_households(
         .collect();
 
     Ok(Json(response))
+}
+
+pub async fn get_household(
+    State(state): State<AppState>,
+    current_user: CurrentUser,
+    Path(household_id): Path<Uuid>,
+) -> Result<Json<HouseholdResponse>, ApiError> {
+    let command = GetHouseholdCommand {
+        household_id: HouseholdId::from_uuid(household_id),
+        user_id: current_user.user_id(),
+    };
+
+    let household = state
+        .households
+        .get_household_for_user
+        .execute(command)
+        .await
+        .map_err(ApiError::from)?;
+
+    Ok(Json(HouseholdResponse {
+        id: household.id().to_string(),
+        name: household.name().as_str().to_owned(),
+        kind: household.kind().to_string(),
+    }))
 }

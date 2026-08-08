@@ -8,7 +8,10 @@ use crate::{
         accounts::domain::UserId,
         households::{
             adapters::validate::validate_aggregate,
-            domain::{Household, HouseholdId, HouseholdKind, HouseholdMember, HouseholdName},
+            domain::{
+                Household, HouseholdId, HouseholdKind, HouseholdMember, HouseholdName,
+                HouseholdRole,
+            },
             ports::{HouseholdRepository, HouseholdRepositoryError},
         },
     },
@@ -161,6 +164,28 @@ impl HouseholdRepository for PostgresHouseholdRepository {
 
         rows.into_iter().map(Household::try_from).collect()
     }
+
+    async fn find_member(
+        &self,
+        household_id: &HouseholdId,
+        user_id: &UserId,
+    ) -> Result<Option<HouseholdMember>, HouseholdRepositoryError> {
+        let row = sqlx::query_as!(
+            HouseholdMemberRow,
+            r#"
+            SELECT household_id, user_id, role, created_at
+            FROM household_members
+            WHERE household_id = $1 AND user_id = $2
+            "#,
+            household_id.as_uuid(),
+            user_id.as_uuid(),
+        )
+        .fetch_optional(&self.pool)
+        .await
+        .map_err(map_sqlx_error)?;
+
+        row.map(HouseholdMember::try_from).transpose()
+    }
 }
 
 const HOUSEHOLDS_PERSONAL_OWNER_UNIQUE_INDEX: &str = "households_personal_owner_unique_idx";
@@ -214,5 +239,28 @@ impl TryFrom<HouseholdRow> for Household {
             value.updated_at,
         )
         .map_err(|_| HouseholdRepositoryError::InvalidStoredData)
+    }
+}
+
+struct HouseholdMemberRow {
+    household_id: Uuid,
+    user_id: Uuid,
+    role: String,
+    created_at: DateTime<Utc>,
+}
+
+impl TryFrom<HouseholdMemberRow> for HouseholdMember {
+    type Error = HouseholdRepositoryError;
+
+    fn try_from(value: HouseholdMemberRow) -> Result<Self, Self::Error> {
+        let role = HouseholdRole::parse(&value.role)
+            .map_err(|_| HouseholdRepositoryError::InvalidStoredData)?;
+
+        Ok(HouseholdMember::new(
+            HouseholdId::from_uuid(value.household_id),
+            UserId::from_uuid(value.user_id),
+            role,
+            value.created_at,
+        ))
     }
 }

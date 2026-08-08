@@ -5,7 +5,7 @@ use sqlx::PgPool;
 use crate::{
     modules::households::{
         adapters::PostgresHouseholdRepository,
-        application::{CreateHouseholdService, ListHouseholdsForUserService},
+        application::{CreateHouseholdService, GetHouseholdService, ListHouseholdsForUserService},
     },
     shared::api::HouseholdsState,
 };
@@ -16,11 +16,15 @@ pub(super) fn build_households_state(pool: &PgPool) -> HouseholdsState {
     let create_household_service =
         Arc::new(CreateHouseholdService::new(household_repository.clone()));
 
-    let list_households_for_user_service =
-        Arc::new(ListHouseholdsForUserService::new(household_repository));
+    let list_households_for_user_service = Arc::new(ListHouseholdsForUserService::new(
+        household_repository.clone(),
+    ));
+
+    let get_household_for_user_service = Arc::new(GetHouseholdService::new(household_repository));
 
     HouseholdsState {
         create_household: create_household_service,
         list_households_for_user: list_households_for_user_service,
+        get_household_for_user: get_household_for_user_service,
     }
 }
