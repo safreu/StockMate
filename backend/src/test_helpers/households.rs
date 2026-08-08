@@ -1,12 +1,15 @@
 use std::sync::Arc;
 
 use async_trait::async_trait;
+use chrono::Utc;
 
 use crate::modules::accounts::domain::UserId;
 use crate::modules::households::application::{
-    CreateHouseholdService, ListHouseholdsForUserService,
+    CreateHouseholdService, GetHouseholdService, ListHouseholdsForUserService,
 };
-use crate::modules::households::domain::HouseholdId;
+use crate::modules::households::domain::{
+    HouseholdId, HouseholdKind, HouseholdName, HouseholdRole,
+};
 use crate::modules::households::ports::HouseholdRepository;
 use crate::{
     modules::households::{
@@ -88,4 +91,39 @@ pub fn build_list_households_service() -> (
     let service = ListHouseholdsForUserService::new(repository.clone());
 
     (service, repository)
+}
+
+pub fn build_get_household_service() -> (GetHouseholdService, Arc<InMemoryHouseholdRepository>) {
+    let repository = Arc::new(InMemoryHouseholdRepository::new());
+
+    let service = GetHouseholdService::new(repository.clone());
+
+    (service, repository)
+}
+
+pub fn create_owned_household(
+    user_id: UserId,
+    kind: HouseholdKind,
+) -> (Household, HouseholdMember) {
+    let household_id = HouseholdId::new();
+    let now = Utc::now();
+
+    let owner = HouseholdMember::new(household_id, user_id, HouseholdRole::Owner, now);
+
+    let personal_owner_id = match kind {
+        HouseholdKind::Personal => Some(user_id),
+        HouseholdKind::Shared => None,
+    };
+
+    let household = Household::new(
+        household_id,
+        HouseholdName::parse("Test household").expect("Test household name should be valid"),
+        kind,
+        personal_owner_id,
+        now,
+        now,
+    )
+    .expect("Test household should be valid");
+
+    (household, owner)
 }

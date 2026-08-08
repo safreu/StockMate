@@ -36,41 +36,12 @@ impl ListHouseholdsForUserService {
 
 #[cfg(test)]
 mod tests {
-    use chrono::Utc;
 
     use super::*;
-    use crate::modules::households::domain::HouseholdId;
-    use crate::modules::households::domain::{
-        HouseholdKind, HouseholdMember, HouseholdName, HouseholdRole,
+    use crate::modules::households::domain::HouseholdKind;
+    use crate::test_helpers::{
+        FailingHouseholdRepository, build_list_households_service, create_owned_household,
     };
-    use crate::test_helpers::{FailingHouseholdRepository, build_list_households_service};
-
-    fn create_owned_household(
-        user_id: UserId,
-        kind: HouseholdKind,
-    ) -> (Household, HouseholdMember) {
-        let household_id = HouseholdId::new();
-        let now = Utc::now();
-
-        let owner = HouseholdMember::new(household_id, user_id, HouseholdRole::Owner, now);
-
-        let personal_owner_id = match kind {
-            HouseholdKind::Personal => Some(user_id),
-            HouseholdKind::Shared => None,
-        };
-
-        let household = Household::new(
-            household_id,
-            HouseholdName::parse("Test household").expect("Test household name should be valid"),
-            kind,
-            personal_owner_id,
-            now,
-            now,
-        )
-        .expect("Test household should be valid");
-
-        (household, owner)
-    }
 
     #[tokio::test]
     async fn households_for_user_are_returned() {
