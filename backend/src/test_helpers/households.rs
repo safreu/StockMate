@@ -79,6 +79,15 @@ impl HouseholdRepository for FailingHouseholdRepository {
             PersistenceError::Failed,
         ))
     }
+
+    async fn find_members(
+        &self,
+        household_id: &HouseholdId,
+    ) -> Result<Vec<HouseholdMember>, HouseholdRepositoryError> {
+        Err(HouseholdRepositoryError::Persistence(
+            PersistenceError::Failed,
+        ))
+    }
 }
 
 pub fn build_create_household_service() -> (CreateHouseholdService, Arc<InMemoryHouseholdRepository>)
@@ -196,5 +205,12 @@ impl HouseholdRepository for DuplicateOnAddHouseholdRepository {
     #[allow(unused_variables)]
     async fn add_member(&self, member: &HouseholdMember) -> Result<(), HouseholdRepositoryError> {
         Err(HouseholdRepositoryError::MemberAlreadyExists)
+    }
+
+    async fn find_members(
+        &self,
+        household_id: &HouseholdId,
+    ) -> Result<Vec<HouseholdMember>, HouseholdRepositoryError> {
+        self.inner.find_members(household_id).await
     }
 }

@@ -146,6 +146,22 @@ impl HouseholdRepository for InMemoryHouseholdRepository {
         state.members.insert(key, member.clone());
         Ok(())
     }
+
+    async fn find_members(
+        &self,
+        household_id: &HouseholdId,
+    ) -> Result<Vec<HouseholdMember>, HouseholdRepositoryError> {
+        let state = self.state.read().await;
+
+        let members = state
+            .members
+            .values()
+            .filter(|member| member.household_id() == *household_id)
+            .cloned()
+            .collect();
+
+        Ok(members)
+    }
 }
 
 #[cfg(test)]
@@ -530,5 +546,90 @@ mod tests {
         let result = repository.add_member(&member).await;
 
         assert_eq!(result, Err(HouseholdRepositoryError::HouseholdNotFound))
+    }
+
+    #[tokio::test]
+    async fn find_members_returns_all_members_of_household() {
+        let repository = InMemoryHouseholdRepository::default();
+
+        let (household, owner) = create_owned_household(UserId::new(), HouseholdKind::Shared);
+
+        repository
+            .create_with_owner(&household, &owner)
+            .await
+            .expect("Household creation should succeed");
+
+        let member_id = UserId::new();
+
+        let member =
+            HouseholdMember::new(household.id(), member_id, HouseholdRole::Member, Utc::now());
+
+        repository
+            .add_member(&member)
+            .await
+            .expect("Adding member should succeed");
+
+        let result = repository
+            .find_members(&household.id())
+            .await
+            .expect("Members lookup should succeed");
+
+        assert_eq!(result.len(), 2);
+        assert!(result.contains(&owner));
+        assert!(result.contains(&member))
+    }
+
+    #[tokio::test]
+    async fn find_members_does_not_return_members_of_other_households() {
+        let repository = InMemoryHouseholdRepository::default();
+
+        let (household, owner) = create_owned_household(UserId::new(), HouseholdKind::Shared);
+
+        let (another_household, another_owner) =
+            create_owned_household(UserId::new(), HouseholdKind::Shared);
+
+        repository
+            .create_with_owner(&household, &owner)
+            .await
+            .expect("Household creation should succeed");
+
+        repository
+            .create_with_owner(&another_household, &another_owner)
+            .await
+            .expect("Household creation should succeed");
+
+        let member_id = UserId::new();
+
+        let member =
+            HouseholdMember::new(household.id(), member_id, HouseholdRole::Member, Utc::now());
+
+        repository
+            .add_member(&member)
+            .await
+            .expect("Adding member should succeed");
+
+        let result = repository
+            .find_members(&household.id())
+            .await
+            .expect("Members lookup should succeed");
+
+        assert_eq!(result.len(), 2);
+        assert!(
+            result
+                .iter()
+                .all(|member| member.household_id() == household.id())
+        )
+    }
+
+    #[tokio::test]
+    async fn find_members_for_unknown_household_returns_empty_vec() {
+        let repository = InMemoryHouseholdRepository::default();
+
+        let result = repository
+            .find_members(&HouseholdId::new())
+            .await
+            .expect("Members lookup should succeed");
+
+        assert!(result.is_empty());
     }
 }

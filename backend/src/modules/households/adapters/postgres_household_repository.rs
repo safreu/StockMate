@@ -209,6 +209,13 @@ impl HouseholdRepository for PostgresHouseholdRepository {
 
         Ok(())
     }
+
+    async fn find_members(
+        &self,
+        _household_id: &HouseholdId,
+    ) -> Result<Vec<HouseholdMember>, HouseholdRepositoryError> {
+        todo!()
+    }
 }
 
 const HOUSEHOLDS_PERSONAL_OWNER_UNIQUE_INDEX: &str = "households_personal_owner_unique_idx";
