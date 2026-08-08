@@ -28,7 +28,8 @@ pub async fn create_household(
     };
 
     let household_id = state
-        .create_household_service
+        .households
+        .create_household
         .execute(command)
         .await
         .map_err(ApiError::from)?;
@@ -50,7 +51,8 @@ pub async fn list_households(
     };
 
     let households = state
-        .list_households_for_user_service
+        .households
+        .list_households_for_user
         .execute(command)
         .await
         .map_err(ApiError::from)?;

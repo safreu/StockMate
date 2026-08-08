@@ -2,9 +2,12 @@ use std::sync::Arc;
 
 use chrono::Utc;
 
-use crate::modules::accounts::{
-    domain::{SessionToken, UserId},
-    ports::{SessionRepository, SessionTokenHasher},
+use crate::{
+    modules::accounts::{
+        domain::{SessionToken, UserId},
+        ports::{SessionRepository, SessionTokenHasher},
+    },
+    shared::application::InternalError,
 };
 
 pub struct AuthenticateSessionCommand {
@@ -44,7 +47,7 @@ impl AuthenticateSessionService {
             .await
             .map_err(|error| {
                 tracing::error!(error=?error, "Failed to load session during authentication");
-                AuthenticateSessionError::RepositoryFailed
+                AuthenticateSessionError::Internal(InternalError::Failed)
             })?
             .ok_or(AuthenticateSessionError::InvalidSession)?;
 
@@ -64,37 +67,24 @@ pub enum AuthenticateSessionError {
     InvalidSession,
     #[error("Session has expired")]
     SessionExpired,
-    #[error("Session repository failed")]
-    RepositoryFailed,
+    #[error(transparent)]
+    Internal(#[from] InternalError),
 }
 
 #[cfg(test)]
 mod tests {
     use chrono::Duration;
 
-    use crate::modules::accounts::{
-        adapters::{InMemorySessionRepository, Sha256SessionTokenHasher},
-        domain::{Session, SessionId},
+    use crate::{
+        modules::accounts::domain::{Session, SessionId},
+        test_helpers::build_auth_service,
     };
 
     use super::*;
 
-    fn test_service() -> (
-        AuthenticateSessionService,
-        Arc<InMemorySessionRepository>,
-        Arc<Sha256SessionTokenHasher>,
-    ) {
-        let repository = Arc::new(InMemorySessionRepository::new());
-        let hasher = Arc::new(Sha256SessionTokenHasher);
-
-        let service = AuthenticateSessionService::new(repository.clone(), hasher.clone());
-
-        (service, repository, hasher)
-    }
-
     #[tokio::test]
     async fn valid_session_returns_authenticated_user() {
-        let (service, repository, hasher) = test_service();
+        let (service, repository, hasher) = build_auth_service();
 
         let user_id = UserId::new();
         let token = SessionToken::from_string("this-is-a-session-token".to_owned())
@@ -128,7 +118,7 @@ mod tests {
 
     #[tokio::test]
     async fn unknown_token_returns_invalid_session() {
-        let (service, _, _) = test_service();
+        let (service, _, _) = build_auth_service();
 
         let token = SessionToken::from_string("unknown-token".to_owned())
             .expect("Test session token should be valid");
@@ -140,7 +130,7 @@ mod tests {
 
     #[tokio::test]
     async fn expired_session_returns_session_expired() {
-        let (service, repository, hasher) = test_service();
+        let (service, repository, hasher) = build_auth_service();
 
         let user_id = UserId::new();
         let token = SessionToken::from_string("this-is-a-session-token".to_owned())

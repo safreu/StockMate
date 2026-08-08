@@ -282,3 +282,41 @@ curl -i \
 ```
 
 Expected status: `401 Unauthorized`.
+
+## List households
+
+Returns all households the authenticated user belongs to.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  "$BASE_URL/api/v1/households"
+```
+
+Expected status: `200 OK`.
+
+Example response:
+
+```json
+[
+  {
+    "id": "<household-uuid>",
+    "name": "My Household",
+    "kind": "personal"
+  },
+  {
+    "id": "<household-uuid>",
+    "name": "Shared Household",
+    "kind": "shared"
+  }
+]
+```
+
+## List households without authentication
+
+```bash
+curl -i \
+  "$BASE_URL/api/v1/households"
+```
+
+Expected status: `401 Unauthorized`.

@@ -1,8 +1,11 @@
 use std::sync::Arc;
 
-use crate::modules::{
-    accounts::domain::UserId,
-    households::{domain::Household, ports::HouseholdRepository},
+use crate::{
+    modules::{
+        accounts::domain::UserId,
+        households::{domain::Household, ports::HouseholdRepository},
+    },
+    shared::application::InternalError,
 };
 
 pub struct ListHouseholdsForUserCommand {
@@ -23,18 +26,12 @@ impl ListHouseholdsForUserService {
     pub async fn execute(
         &self,
         command: ListHouseholdsForUserCommand,
-    ) -> Result<Vec<Household>, ListHouseholdsForUserError> {
+    ) -> Result<Vec<Household>, InternalError> {
         self.household_repository
             .find_for_user(&command.user_id)
             .await
-            .map_err(|_| ListHouseholdsForUserError::RepositoryFailed)
+            .map_err(|_| InternalError::Failed)
     }
-}
-
-#[derive(Debug, PartialEq, Eq, thiserror::Error)]
-pub enum ListHouseholdsForUserError {
-    #[error("Household repository failed")]
-    RepositoryFailed,
 }
 
 #[cfg(test)]
@@ -135,7 +132,7 @@ mod tests {
 
         let result = service.execute(command).await;
 
-        assert_eq!(result, Err(ListHouseholdsForUserError::RepositoryFailed))
+        assert_eq!(result, Err(InternalError::Failed))
     }
 
     struct FailingHouseholdRepository;

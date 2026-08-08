@@ -1,8 +1,11 @@
 use std::sync::Arc;
 
-use crate::modules::accounts::{
-    domain::{DisplayName, Email, User, UserId},
-    ports::{PasswordHasher, UserRepository, UserRepositoryError},
+use crate::{
+    modules::accounts::{
+        domain::{DisplayName, Email, User, UserId},
+        ports::{PasswordHasher, UserRepository, UserRepositoryError},
+    },
+    shared::application::InternalError,
 };
 
 pub struct RegisterUserCommand {
@@ -39,11 +42,11 @@ impl RegisterUserService {
                 .await
                 .map_err(|error| {
                     tracing::error!(error = ?error, "password hashing task failed");
-                    RegisterUserError::PasswordHashingFailed
+                    RegisterUserError::Internal(InternalError::Failed)
                 })?
                 .map_err(|error| {
                     tracing::error!(error = ?error, "password hashing failed");
-                    RegisterUserError::PasswordHashingFailed
+                    RegisterUserError::Internal(InternalError::Failed)
                 })?;
 
         let id = UserId::new();
@@ -59,7 +62,7 @@ impl RegisterUserService {
                 },
                 other => {
                     tracing::error!(error = ?other, user_id = %user.id(), "failed to persist registered user");
-                    RegisterUserError::RepositoryFailed
+                    RegisterUserError::Internal(InternalError::Failed)
                 },
             })?;
 
@@ -73,21 +76,19 @@ pub enum RegisterUserError {
     InvalidEmail,
     #[error("Email already exists")]
     EmailAlreadyExists,
-    #[error("Password hashing failed")]
-    PasswordHashingFailed,
-    #[error("User repository failed")]
-    RepositoryFailed,
     #[error("Display name is invalid")]
     InvalidDisplayName,
+
+    #[error(transparent)]
+    Internal(#[from] InternalError),
 }
 
 #[cfg(test)]
 mod tests {
 
-    use crate::modules::accounts::{
-        adapters::{Argon2PasswordHasher, InMemoryUserRepository},
-        domain::PasswordHash,
-        ports::PasswordHasherError,
+    use crate::{
+        modules::accounts::adapters::InMemoryUserRepository,
+        test_helpers::{FailingPasswordHasher, build_register_service},
     };
 
     use super::*;
@@ -104,22 +105,9 @@ mod tests {
         }
     }
 
-    fn test_service() -> (
-        RegisterUserService,
-        Arc<InMemoryUserRepository>,
-        Arc<Argon2PasswordHasher>,
-    ) {
-        let repository = Arc::new(InMemoryUserRepository::new());
-        let hasher = Arc::new(Argon2PasswordHasher::new());
-
-        let service = RegisterUserService::new(repository.clone(), hasher.clone());
-
-        (service, repository, hasher)
-    }
-
     #[tokio::test]
     async fn valid_user_can_be_registered() {
-        let (service, repository, _) = test_service();
+        let (service, repository, _) = build_register_service();
 
         let id = service
             .execute(register_command(VALID_EMAIL, VALID_NAME, VALID_PASSWORD))
@@ -139,7 +127,7 @@ mod tests {
 
     #[tokio::test]
     async fn password_is_hashed_before_user_is_stored() {
-        let (service, repository, hasher) = test_service();
+        let (service, repository, hasher) = build_register_service();
 
         let id = service
             .execute(register_command(VALID_EMAIL, VALID_NAME, VALID_PASSWORD))
@@ -161,7 +149,7 @@ mod tests {
 
     #[tokio::test]
     async fn invalid_email_is_rejected() {
-        let (service, _, _) = test_service();
+        let (service, _, _) = build_register_service();
 
         let result = service
             .execute(register_command(
@@ -176,7 +164,7 @@ mod tests {
 
     #[tokio::test]
     async fn invalid_display_name_is_rejected() {
-        let (service, _, _) = test_service();
+        let (service, _, _) = build_register_service();
 
         let result = service
             .execute(register_command(VALID_EMAIL, "         ", VALID_PASSWORD))
@@ -187,7 +175,7 @@ mod tests {
 
     #[tokio::test]
     async fn duplicate_email_is_rejected() {
-        let (service, _, _) = test_service();
+        let (service, _, _) = build_register_service();
 
         service
             .execute(register_command(VALID_EMAIL, VALID_NAME, VALID_PASSWORD))
@@ -211,19 +199,9 @@ mod tests {
             .execute(register_command(VALID_EMAIL, VALID_NAME, VALID_PASSWORD))
             .await;
 
-        assert_eq!(result, Err(RegisterUserError::PasswordHashingFailed));
-    }
-
-    pub struct FailingPasswordHasher;
-
-    impl PasswordHasher for FailingPasswordHasher {
-        #[allow(unused_variables)]
-        fn hash(&self, password: &str) -> Result<PasswordHash, PasswordHasherError> {
-            Err(PasswordHasherError::HashFailed)
-        }
-        #[allow(unused_variables)]
-        fn verify(&self, password: &str, hash: &PasswordHash) -> Result<bool, PasswordHasherError> {
-            Err(PasswordHasherError::VerifyFailed)
-        }
+        assert_eq!(
+            result,
+            Err(RegisterUserError::Internal(InternalError::Failed))
+        );
     }
 }
