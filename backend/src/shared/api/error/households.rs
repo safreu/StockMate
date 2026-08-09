@@ -40,7 +40,7 @@ impl From<AddHouseholdMemberError> for ApiError {
     fn from(error: AddHouseholdMemberError) -> Self {
         match error {
             AddHouseholdMemberError::InvalidEmail => {
-                ApiError::bad_request("invalid_email", "The email address in invalid")
+                ApiError::bad_request("invalid_email", "The email address is invalid")
             }
 
             AddHouseholdMemberError::HouseholdNotFound => {

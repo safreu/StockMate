@@ -104,7 +104,7 @@ mod tests {
     async fn unknown_token_hash_returns_none() {
         let token_hash = "this-is-a-hash";
         let another_token_hash = SessionTokenHash::from_encoded("this-is-another-hash")
-            .expect("Another Hash should ba valid");
+            .expect("Another Hash should be valid");
 
         let repository = InMemorySessionRepository::new();
         let session = create_session(token_hash);

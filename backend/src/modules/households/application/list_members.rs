@@ -1,4 +1,4 @@
-use std::sync::Arc;
+use std::{collections::HashMap, sync::Arc};
 
 use crate::{
     modules::{
@@ -101,24 +101,26 @@ impl ListHouseholdMembersService {
                 InternalError::Failed
             })?;
 
+        let users_by_id: HashMap<UserId, DisplayName> = users
+            .into_iter()
+            .map(|user| (user.id(), user.display_name().clone()))
+            .collect();
+
         let member_infos = members
             .into_iter()
             .map(|member| {
-                let user = users
-                    .iter()
-                    .find(|user| user.id() == member.user_id())
-                    .ok_or_else(|| {
-                        tracing::error!(
-                            household_id = %command.household_id,
-                            user_id = %member.user_id(),
-                            "Household member references missing user",
-                        );
-                        ListHouseholdMembersError::Internal(InternalError::Failed)
-                    })?;
+                let display_name = users_by_id.get(&member.user_id()).ok_or_else(|| {
+                    tracing::error!(
+                        household_id = %command.household_id,
+                        user_id = %member.user_id(),
+                        "Household member references missing user",
+                    );
+                    ListHouseholdMembersError::Internal(InternalError::Failed)
+                })?;
 
                 Ok(HouseholdMemberInfo {
                     user_id: member.user_id(),
-                    display_name: user.display_name().clone(),
+                    display_name: display_name.clone(),
                     role: member.role(),
                 })
             })

@@ -57,7 +57,7 @@ pub trait HouseholdRepository: Send + Sync {
 pub enum HouseholdRepositoryError {
     #[error("A personal household already exists for this owner")]
     PersonalHouseholdAlreadyExists,
-    #[error("Stored user data is invalid")]
+    #[error("Stored household data is invalid")]
     InvalidStoredData,
     #[error("Household an owner membership are inconsistent")]
     InvalidAggregate,

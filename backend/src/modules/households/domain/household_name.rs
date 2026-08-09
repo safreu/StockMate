@@ -8,7 +8,7 @@ impl HouseholdName {
             return Err(HouseholdNameError::Empty);
         };
 
-        if value.chars().count() > 100 {
+        if value.chars().count() > 50 {
             return Err(HouseholdNameError::TooLong);
         }
 

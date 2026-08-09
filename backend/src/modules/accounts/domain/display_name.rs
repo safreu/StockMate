@@ -8,7 +8,7 @@ impl DisplayName {
             return Err(DisplayNameError::Empty);
         };
 
-        if value.chars().count() > 100 {
+        if value.chars().count() > 50 {
             return Err(DisplayNameError::TooLong);
         }
 
