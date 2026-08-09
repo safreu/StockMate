@@ -9,7 +9,7 @@ use crate::{
             adapters::PostgresHouseholdRepository,
             application::{
                 AddHouseholdMemberService, CreateHouseholdService, GetHouseholdService,
-                ListHouseholdsForUserService,
+                ListHouseholdMembersService, ListHouseholdsForUserService,
             },
         },
     },
@@ -31,7 +31,12 @@ pub(super) fn build_households_state(pool: &PgPool) -> HouseholdsState {
     let get_household_for_user_service =
         Arc::new(GetHouseholdService::new(household_repository.clone()));
 
-    let add_household_member = Arc::new(AddHouseholdMemberService::new(
+    let add_household_member_service = Arc::new(AddHouseholdMemberService::new(
+        household_repository.clone(),
+        user_repository.clone(),
+    ));
+
+    let list_household_members_service = Arc::new(ListHouseholdMembersService::new(
         household_repository,
         user_repository,
     ));
@@ -40,6 +45,7 @@ pub(super) fn build_households_state(pool: &PgPool) -> HouseholdsState {
         create_household: create_household_service,
         list_households_for_user: list_households_for_user_service,
         get_household_for_user: get_household_for_user_service,
-        add_household_member,
+        add_household_member: add_household_member_service,
+        list_household_members: list_household_members_service,
     }
 }

@@ -11,11 +11,11 @@ use crate::{
         households::{
             api::dto::{
                 AddHouseholdMemberRequest, CreateHouseholdRequest, CreateHouseholdResponse,
-                HouseholdResponse,
+                HouseholdMemberResponse, HouseholdResponse,
             },
             application::{
                 AddHouseholdMemberCommand, CreateHouseholdCommand, GetHouseholdCommand,
-                ListHouseholdsForUserCommand,
+                ListHouseholdMembersCommand, ListHouseholdsForUserCommand,
             },
             domain::{HouseholdId, HouseholdKind},
         },
@@ -124,4 +124,33 @@ pub async fn add_household_member(
         .map_err(ApiError::from)?;
 
     Ok(StatusCode::NO_CONTENT)
+}
+
+pub async fn list_household_members(
+    State(state): State<AppState>,
+    current_user: CurrentUser,
+    Path(household_id): Path<Uuid>,
+) -> Result<Json<Vec<HouseholdMemberResponse>>, ApiError> {
+    let command = ListHouseholdMembersCommand {
+        household_id: HouseholdId::from_uuid(household_id),
+        requester_id: current_user.user_id(),
+    };
+
+    let members = state
+        .households
+        .list_household_members
+        .execute(command)
+        .await
+        .map_err(ApiError::from)?;
+
+    let response = members
+        .into_iter()
+        .map(|member| HouseholdMemberResponse {
+            user_id: member.user_id.to_string(),
+            display_name: member.display_name.as_str().to_string(),
+            role: member.role.to_string(),
+        })
+        .collect();
+
+    Ok(Json(response))
 }

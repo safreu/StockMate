@@ -78,6 +78,25 @@ impl UserRepository for PostgresUserRepository {
 
         row.map(User::try_from).transpose()
     }
+
+    async fn find_by_ids(&self, ids: &[UserId]) -> Result<Vec<User>, UserRepositoryError> {
+        let ids: Vec<Uuid> = ids.iter().map(|id| id.into_uuid()).collect();
+
+        let rows = sqlx::query_as!(
+            UserRow,
+            r#"
+            SELECT id, email, display_name, password_hash
+            FROM users
+            WHERE id = ANY($1)
+            "#,
+            &ids
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(map_sqlx_error)?;
+
+        rows.into_iter().map(User::try_from).collect()
+    }
 }
 
 struct UserRow {

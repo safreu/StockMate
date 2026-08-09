@@ -11,3 +11,8 @@ mod add_member;
 pub use add_member::{
     AddHouseholdMemberCommand, AddHouseholdMemberError, AddHouseholdMemberService,
 };
+
+mod list_members;
+pub use list_members::{
+    ListHouseholdMembersCommand, ListHouseholdMembersError, ListHouseholdMembersService,
+};

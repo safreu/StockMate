@@ -169,4 +169,30 @@ impl UserRepository for FailingUserRepository {
     async fn find_by_email(&self, email: &Email) -> Result<Option<User>, UserRepositoryError> {
         Err(UserRepositoryError::Persistence(PersistenceError::Failed))
     }
+
+    async fn find_by_ids(&self, ids: &[UserId]) -> Result<Vec<User>, UserRepositoryError> {
+        Err(UserRepositoryError::Persistence(PersistenceError::Failed))
+    }
+}
+
+pub struct MissingUserRepository;
+
+#[async_trait]
+#[allow(unused)]
+impl UserRepository for MissingUserRepository {
+    async fn insert(&self, user: &User) -> Result<(), UserRepositoryError> {
+        Err(UserRepositoryError::Persistence(PersistenceError::Failed))
+    }
+
+    async fn find_by_id(&self, id: &UserId) -> Result<Option<User>, UserRepositoryError> {
+        Err(UserRepositoryError::Persistence(PersistenceError::Failed))
+    }
+
+    async fn find_by_email(&self, email: &Email) -> Result<Option<User>, UserRepositoryError> {
+        Err(UserRepositoryError::Persistence(PersistenceError::Failed))
+    }
+
+    async fn find_by_ids(&self, ids: &[UserId]) -> Result<Vec<User>, UserRepositoryError> {
+        Ok(Vec::new())
+    }
 }
