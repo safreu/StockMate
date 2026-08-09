@@ -162,6 +162,22 @@ impl HouseholdRepository for InMemoryHouseholdRepository {
 
         Ok(members)
     }
+
+    async fn remove_member(
+        &self,
+        household_id: &HouseholdId,
+        user_id: &UserId,
+    ) -> Result<(), HouseholdRepositoryError> {
+        let mut state = self.state.write().await;
+
+        let key = (*household_id, *user_id);
+
+        if state.members.remove(&key).is_none() {
+            return Err(HouseholdRepositoryError::MemberNotFound);
+        }
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -631,5 +647,86 @@ mod tests {
             .expect("Members lookup should succeed");
 
         assert!(result.is_empty());
+    }
+
+    #[tokio::test]
+    async fn existing_member_can_be_removed() {
+        let repository = InMemoryHouseholdRepository::default();
+
+        let owner_id = UserId::new();
+        let member_id = UserId::new();
+
+        let (household, owner) = create_owned_household(owner_id, HouseholdKind::Shared);
+
+        repository
+            .create_with_owner(&household, &owner)
+            .await
+            .expect("Household creation should succeed");
+
+        let member =
+            HouseholdMember::new(household.id(), member_id, HouseholdRole::Member, Utc::now());
+
+        repository
+            .add_member(&member)
+            .await
+            .expect("Adding member should succeed");
+
+        let result = repository.remove_member(&household.id(), &member_id).await;
+
+        assert!(result.is_ok())
+    }
+
+    #[tokio::test]
+    async fn removed_member_can_no_longer_be_found() {
+        let repository = InMemoryHouseholdRepository::default();
+
+        let owner_id = UserId::new();
+        let member_id = UserId::new();
+
+        let (household, owner) = create_owned_household(owner_id, HouseholdKind::Shared);
+
+        repository
+            .create_with_owner(&household, &owner)
+            .await
+            .expect("Household creation should succeed");
+
+        let member =
+            HouseholdMember::new(household.id(), member_id, HouseholdRole::Member, Utc::now());
+
+        repository
+            .add_member(&member)
+            .await
+            .expect("Adding member should succeed");
+
+        repository
+            .remove_member(&household.id(), &member_id)
+            .await
+            .expect("Removing member should succeed");
+
+        let result = repository
+            .find_member(&household.id(), &member_id)
+            .await
+            .expect("Membership lookup should succeed");
+
+        assert!(result.is_none())
+    }
+
+    #[tokio::test]
+    async fn removing_unknown_member_returns_not_found() {
+        let repository = InMemoryHouseholdRepository::default();
+
+        let owner_id = UserId::new();
+        let member_id = UserId::new();
+
+        let (household, owner) = create_owned_household(owner_id, HouseholdKind::Shared);
+
+        repository
+            .create_with_owner(&household, &owner)
+            .await
+            .expect("Household creation should succeed");
+
+        let result = repository.remove_member(&household.id(), &member_id).await;
+
+        assert_eq!(result, Err(HouseholdRepositoryError::MemberNotFound))
     }
 }

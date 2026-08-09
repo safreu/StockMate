@@ -1,12 +1,12 @@
 use axum::{
     Router,
-    routing::{get, post},
+    routing::{delete, get, post},
 };
 
 use crate::{
     modules::households::api::handlers::{
         add_household_member, create_household, get_household, list_household_members,
-        list_households,
+        list_households, remove_household_member,
     },
     shared::api::AppState,
 };
@@ -19,4 +19,5 @@ pub fn households_router() -> Router<AppState> {
             "/{id}/members",
             post(add_household_member).get(list_household_members),
         )
+        .route("/{id}/members/{member_id}", delete(remove_household_member))
 }

@@ -229,6 +229,30 @@ impl HouseholdRepository for PostgresHouseholdRepository {
 
         rows.into_iter().map(HouseholdMember::try_from).collect()
     }
+
+    async fn remove_member(
+        &self,
+        household_id: &HouseholdId,
+        user_id: &UserId,
+    ) -> Result<(), HouseholdRepositoryError> {
+        let result = sqlx::query!(
+            r#"
+            DELETE FROM household_members
+            WHERE household_id = $1 AND user_id = $2
+            "#,
+            household_id.as_uuid(),
+            user_id.as_uuid(),
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(map_sqlx_error)?;
+
+        if result.rows_affected() == 0 {
+            return Err(HouseholdRepositoryError::MemberNotFound);
+        }
+
+        Ok(())
+    }
 }
 
 const HOUSEHOLDS_PERSONAL_OWNER_UNIQUE_INDEX: &str = "households_personal_owner_unique_idx";

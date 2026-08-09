@@ -16,3 +16,8 @@ mod list_members;
 pub use list_members::{
     ListHouseholdMembersCommand, ListHouseholdMembersError, ListHouseholdMembersService,
 };
+
+mod remove_member;
+pub use remove_member::{
+    RemoveHouseholdMemberCommand, RemoveHouseholdMemberError, RemoveHouseholdMemberService,
+};

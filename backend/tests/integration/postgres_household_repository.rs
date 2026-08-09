@@ -391,3 +391,87 @@ async fn member_cannot_be_added_to_unknown_household(pool: PgPool) {
 
     assert_eq!(result, Err(HouseholdRepositoryError::HouseholdNotFound))
 }
+
+#[sqlx::test]
+async fn existing_member_can_be_removed(pool: PgPool) {
+    let user_repository = PostgresUserRepository::new(pool.clone());
+    let household_repository = PostgresHouseholdRepository::new(pool);
+
+    let owner = insert_test_user(&user_repository).await;
+    let member = insert_test_user_with_email(&user_repository, "different.valid@email.com").await;
+
+    let (household, _) =
+        insert_owned_household(&household_repository, owner.id(), HouseholdKind::Shared).await;
+
+    let household_member = HouseholdMember::new(
+        household.id(),
+        member.id(),
+        HouseholdRole::Member,
+        Utc::now(),
+    );
+
+    household_repository
+        .add_member(&household_member)
+        .await
+        .expect("Adding member should succeed");
+
+    let result = household_repository
+        .remove_member(&household.id(), &member.id())
+        .await;
+
+    assert!(result.is_ok())
+}
+
+#[sqlx::test]
+async fn removed_member_can_no_longer_be_found(pool: PgPool) {
+    let user_repository = PostgresUserRepository::new(pool.clone());
+    let household_repository = PostgresHouseholdRepository::new(pool);
+
+    let owner = insert_test_user(&user_repository).await;
+    let member = insert_test_user_with_email(&user_repository, "different.valid@email.com").await;
+
+    let (household, _) =
+        insert_owned_household(&household_repository, owner.id(), HouseholdKind::Shared).await;
+
+    let household_member = HouseholdMember::new(
+        household.id(),
+        member.id(),
+        HouseholdRole::Member,
+        Utc::now(),
+    );
+
+    household_repository
+        .add_member(&household_member)
+        .await
+        .expect("Adding member should succeed");
+
+    household_repository
+        .remove_member(&household.id(), &member.id())
+        .await
+        .expect("Removing member should succeed");
+
+    let result = household_repository
+        .find_member(&household.id(), &member.id())
+        .await
+        .expect("Membership lookup should succeed");
+
+    assert!(result.is_none())
+}
+
+#[sqlx::test]
+async fn removing_unknown_member_returns_not_found(pool: PgPool) {
+    let user_repository = PostgresUserRepository::new(pool.clone());
+    let household_repository = PostgresHouseholdRepository::new(pool);
+
+    let owner = insert_test_user(&user_repository).await;
+    let member = insert_test_user_with_email(&user_repository, "different.valid@email.com").await;
+
+    let (household, _) =
+        insert_owned_household(&household_repository, owner.id(), HouseholdKind::Shared).await;
+
+    let result = household_repository
+        .remove_member(&household.id(), &member.id())
+        .await;
+
+    assert_eq!(result, Err(HouseholdRepositoryError::MemberNotFound))
+}

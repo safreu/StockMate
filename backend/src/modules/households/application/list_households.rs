@@ -40,7 +40,7 @@ mod tests {
     use super::*;
     use crate::modules::households::domain::HouseholdKind;
     use crate::test_helpers::{
-        FailingHouseholdRepository, build_list_households_service, create_owned_household,
+        FailingHouseholdRepository, build_list_households_service, insert_owned_household,
     };
 
     #[tokio::test]
@@ -49,24 +49,13 @@ mod tests {
 
         let user_id = UserId::new();
 
-        let (personal_household, personal_owner) =
-            create_owned_household(user_id, HouseholdKind::Personal);
-        let (shared_household, shared_owner) =
-            create_owned_household(user_id, HouseholdKind::Shared);
-
-        repository
-            .create_with_owner(&personal_household, &personal_owner)
-            .await
-            .expect("Household creation should succeed");
-        repository
-            .create_with_owner(&shared_household, &shared_owner)
-            .await
-            .expect("Household creation should succeed");
-
-        let command = ListHouseholdsForUserCommand { user_id };
+        let (personal_household, _) =
+            insert_owned_household(&repository, user_id, HouseholdKind::Personal).await;
+        let (shared_household, _) =
+            insert_owned_household(&repository, user_id, HouseholdKind::Shared).await;
 
         let result = service
-            .execute(command)
+            .execute(ListHouseholdsForUserCommand { user_id })
             .await
             .expect("Household lookup should succeed");
 
@@ -83,9 +72,9 @@ mod tests {
 
         let user_id = UserId::new();
 
-        let command = ListHouseholdsForUserCommand { user_id };
-
-        let result = service.execute(command).await;
+        let result = service
+            .execute(ListHouseholdsForUserCommand { user_id })
+            .await;
 
         assert_eq!(result, Err(InternalError::Failed))
     }

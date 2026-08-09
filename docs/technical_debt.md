@@ -31,3 +31,51 @@
 ## Features
 
 - Consider invitation-based household membership with pending/accept/reject states instead of immediate membership assignment.
+
+### Extract reusable authentication/account crate
+
+**When:** After the first StockMate release.
+
+The current accounts/authentication implementation contains functionality that could be reused across future Rust backend projects. Consider extracting the generic parts into a separate Rust crate and GitHub repository.
+
+Potential candidates for extraction:
+
+- Account/auth domain types:
+  - `UserId`
+  - `Email`
+  - `DisplayName`
+  - `PasswordHash`
+  - `SessionId`
+  - `SessionToken`
+  - `Session`
+- Repository and infrastructure ports:
+  - `UserRepository`
+  - `SessionRepository`
+  - `PasswordHasher`
+  - session token generation/hashing
+- Generic application services:
+  - user registration
+  - login
+  - logout/session invalidation
+  - session authentication
+- Generic implementations such as Argon2 password hashing.
+
+Keep application-specific infrastructure in StockMate initially:
+
+- SQLx/Postgres repositories and migrations
+- Axum routes and handlers
+- `CurrentUser` extractor
+- cookie configuration
+- StockMate-specific API errors and DTOs
+- application bootstrap/wiring
+
+The extracted crate should not depend on StockMate. StockMate should depend on the reusable crate.
+
+Possible future structure:
+
+```text
+rust-auth/
+├── domain/
+├── application/
+├── ports/
+└── adapters/

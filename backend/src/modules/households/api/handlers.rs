@@ -7,7 +7,7 @@ use uuid::Uuid;
 
 use crate::{
     modules::{
-        accounts::api::CurrentUser,
+        accounts::{api::CurrentUser, domain::UserId},
         households::{
             api::dto::{
                 AddHouseholdMemberRequest, CreateHouseholdRequest, CreateHouseholdResponse,
@@ -16,6 +16,7 @@ use crate::{
             application::{
                 AddHouseholdMemberCommand, CreateHouseholdCommand, GetHouseholdCommand,
                 ListHouseholdMembersCommand, ListHouseholdsForUserCommand,
+                RemoveHouseholdMemberCommand,
             },
             domain::{HouseholdId, HouseholdKind},
         },
@@ -153,4 +154,25 @@ pub async fn list_household_members(
         .collect();
 
     Ok(Json(response))
+}
+
+pub async fn remove_household_member(
+    State(state): State<AppState>,
+    current_user: CurrentUser,
+    Path((household_id, member_id)): Path<(Uuid, Uuid)>,
+) -> Result<StatusCode, ApiError> {
+    let command = RemoveHouseholdMemberCommand {
+        requester_id: current_user.user_id(),
+        household_id: HouseholdId::from_uuid(household_id),
+        member_id: UserId::from_uuid(member_id),
+    };
+
+    state
+        .households
+        .remove_household_member
+        .execute(command)
+        .await
+        .map_err(ApiError::from)?;
+
+    Ok(StatusCode::NO_CONTENT)
 }
