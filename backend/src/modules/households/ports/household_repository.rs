@@ -43,6 +43,12 @@ pub trait HouseholdRepository: Send + Sync {
         &self,
         household_id: &HouseholdId,
     ) -> Result<Vec<HouseholdMember>, HouseholdRepositoryError>;
+
+    async fn remove_member(
+        &self,
+        household_id: &HouseholdId,
+        user_id: &UserId,
+    ) -> Result<(), HouseholdRepositoryError>;
 }
 
 #[derive(Debug, PartialEq, Eq, thiserror::Error)]
@@ -59,6 +65,8 @@ pub enum HouseholdRepositoryError {
     MemberAlreadyExists,
     #[error("Household does not exist")]
     HouseholdNotFound,
+    #[error("Household member was not found")]
+    MemberNotFound,
     #[error(transparent)]
     Persistence(#[from] PersistenceError),
 }

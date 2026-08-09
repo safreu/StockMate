@@ -88,6 +88,16 @@ impl HouseholdRepository for FailingHouseholdRepository {
             PersistenceError::Failed,
         ))
     }
+
+    async fn remove_member(
+        &self,
+        household_id: &HouseholdId,
+        user_id: &UserId,
+    ) -> Result<(), HouseholdRepositoryError> {
+        Err(HouseholdRepositoryError::Persistence(
+            PersistenceError::Failed,
+        ))
+    }
 }
 
 pub fn build_create_household_service() -> (CreateHouseholdService, Arc<InMemoryHouseholdRepository>)
@@ -212,6 +222,14 @@ impl HouseholdRepository for DuplicateOnAddHouseholdRepository {
         household_id: &HouseholdId,
     ) -> Result<Vec<HouseholdMember>, HouseholdRepositoryError> {
         self.inner.find_members(household_id).await
+    }
+
+    async fn remove_member(
+        &self,
+        household_id: &HouseholdId,
+        user_id: &UserId,
+    ) -> Result<(), HouseholdRepositoryError> {
+        self.inner.remove_member(household_id, user_id).await
     }
 }
 
