@@ -1,6 +1,7 @@
 use crate::{
     modules::households::application::{
-        AddHouseholdMemberError, CreateHouseholdError, GetHouseholdError, ListHouseholdMembersError,
+        AddHouseholdMemberError, CreateHouseholdError, GetHouseholdError,
+        ListHouseholdMembersError, RemoveHouseholdMemberError,
     },
     shared::api::error::ApiError,
 };
@@ -81,6 +82,29 @@ impl From<ListHouseholdMembersError> for ApiError {
                 "You do not have access to this household",
             ),
             ListHouseholdMembersError::Internal(_) => ApiError::internal_error(),
+        }
+    }
+}
+
+impl From<RemoveHouseholdMemberError> for ApiError {
+    fn from(error: RemoveHouseholdMemberError) -> Self {
+        match error {
+            RemoveHouseholdMemberError::HouseholdNotFound => {
+                ApiError::not_found("household_not_found", "The household was not found")
+            }
+            RemoveHouseholdMemberError::Forbidden => ApiError::forbidden(
+                "household_access_forbidden",
+                "You do not have permission to modify this household",
+            ),
+            RemoveHouseholdMemberError::MemberNotFound => ApiError::not_found(
+                "household_member_not_found",
+                "The household member was not found",
+            ),
+            RemoveHouseholdMemberError::OwnerCannotBeRemoved => ApiError::conflict(
+                "household_owner_cannot_be_removed",
+                "The household owner cannot be removed",
+            ),
+            RemoveHouseholdMemberError::Internal(_) => ApiError::internal_error(),
         }
     }
 }

@@ -524,3 +524,74 @@ curl -i \
 ```
 
 Expected status: `401 Unauthorized`.
+
+## Remove a household member
+
+The authenticated user must either be the member being removed or an owner of the household.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X DELETE \
+  "$BASE_URL/api/v1/households/<household-uuid>/members/<member-user-uuid>"
+```
+
+Expected status: `204 No Content`.
+
+## Leave a household
+
+A normal household member can remove themselves.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X DELETE \
+  "$BASE_URL/api/v1/households/<household-uuid>/members/<your-user-uuid>"
+```
+
+Expected status: `204 No Content`.
+
+## Remove a member without permission
+
+Use a session belonging to a normal member and try to remove another member.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X DELETE \
+  "$BASE_URL/api/v1/households/<household-uuid>/members/<other-member-user-uuid>"
+```
+
+Expected status: `403 Forbidden`.
+
+## Remove an unknown member
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X DELETE \
+  "$BASE_URL/api/v1/households/<household-uuid>/members/00000000-0000-0000-0000-000000000000"
+```
+
+Expected status: `404 Not Found`.
+
+## Remove the household owner
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X DELETE \
+  "$BASE_URL/api/v1/households/<household-uuid>/members/<owner-user-uuid>"
+```
+
+Expected status: `409 Conflict`.
+
+## Remove a household member without authentication
+
+```bash
+curl -i \
+  -X DELETE \
+  "$BASE_URL/api/v1/households/<household-uuid>/members/<member-user-uuid>"
+```
+
+Expected status: `401 Unauthorized`.
