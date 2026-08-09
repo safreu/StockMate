@@ -21,3 +21,6 @@ pub use session_token_hash::{SessionTokenHash, SessionTokenHashError};
 
 mod session;
 pub use session::{Session, SessionError};
+
+mod display_name;
+pub use display_name::{DisplayName, DisplayNameError};

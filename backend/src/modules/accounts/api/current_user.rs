@@ -3,7 +3,7 @@ use axum_extra::extract::CookieJar;
 
 use crate::{
     modules::accounts::{
-        application::AuthenticateSessionCommand,
+        application::{AuthenticateSessionCommand, AuthenticateSessionError},
         domain::{SessionToken, UserId},
     },
     shared::api::{ApiError, AppState},
@@ -33,18 +33,21 @@ impl FromRequestParts<AppState> for CurrentUser {
     ) -> Result<Self, Self::Rejection> {
         let jar: CookieJar = parts.extract_with_state(state).await.map_err(|rejection| {
             tracing::error!(error = ?rejection, "failed to extract request cookies");
-            ApiError::internal("internal_error", "An internal error occurred")
+            ApiError::internal_error()
         })?;
 
         let cookie = jar
-            .get(&state.session_cookie.name)
-            .ok_or_else(ApiError::authentication_required)?;
+            .get(&state.accounts.session_cookie.name)
+            .ok_or(AuthenticateSessionError::InvalidSession)
+            .map_err(ApiError::from)?;
 
         let token = SessionToken::from_string(cookie.value().to_owned())
-            .map_err(|_| ApiError::authentication_required())?;
+            .map_err(|_| AuthenticateSessionError::InvalidSession)
+            .map_err(ApiError::from)?;
 
         let authenticated = state
-            .authenticate_session_service
+            .accounts
+            .authenticate_session
             .execute(AuthenticateSessionCommand { token })
             .await
             .map_err(ApiError::from)?;

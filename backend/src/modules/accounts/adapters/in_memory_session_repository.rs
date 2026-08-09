@@ -62,34 +62,15 @@ impl Default for InMemorySessionRepository {
 
 #[cfg(test)]
 mod tests {
-    use chrono::{Duration, TimeZone, Utc};
 
-    use crate::modules::accounts::domain::{SessionId, UserId};
+    use crate::test_helpers::create_session;
 
     use super::*;
-
-    fn test_session(token_hash: &str) -> Session {
-        let created_at = Utc
-            .with_ymd_and_hms(2026, 8, 1, 12, 0, 0)
-            .single()
-            .expect("Timestamp should be valid");
-
-        let expires_at = created_at + Duration::hours(1);
-
-        Session::new(
-            SessionId::new(),
-            UserId::new(),
-            SessionTokenHash::from_encoded(token_hash).expect("Test token hash should be valid"),
-            expires_at,
-            created_at,
-        )
-        .expect("Test session should be valid")
-    }
 
     #[tokio::test]
     async fn session_can_be_inserted() {
         let repository = InMemorySessionRepository::new();
-        let session = test_session("this-is-a-hash");
+        let session = create_session("this-is-a-hash");
 
         assert!(repository.insert(&session).await.is_ok());
     }
@@ -99,7 +80,7 @@ mod tests {
         let token_hash = "this-is-a-hash";
 
         let repository = InMemorySessionRepository::new();
-        let session = test_session(token_hash);
+        let session = create_session(token_hash);
 
         repository
             .insert(&session)
@@ -123,10 +104,10 @@ mod tests {
     async fn unknown_token_hash_returns_none() {
         let token_hash = "this-is-a-hash";
         let another_token_hash = SessionTokenHash::from_encoded("this-is-another-hash")
-            .expect("Another Hash should ba valid");
+            .expect("Another Hash should be valid");
 
         let repository = InMemorySessionRepository::new();
-        let session = test_session(token_hash);
+        let session = create_session(token_hash);
 
         repository
             .insert(&session)
@@ -145,7 +126,7 @@ mod tests {
         let token_hash = "this-is-a-hash";
 
         let repository = InMemorySessionRepository::new();
-        let session = test_session(token_hash);
+        let session = create_session(token_hash);
 
         repository
             .insert(&session)
@@ -165,7 +146,7 @@ mod tests {
         let token_hash = "this-is-a-hash";
 
         let repository = InMemorySessionRepository::new();
-        let session = test_session(token_hash);
+        let session = create_session(token_hash);
 
         repository
             .insert(&session)
@@ -190,7 +171,7 @@ mod tests {
         let token_hash = "this-is-a-hash";
 
         let repository = InMemorySessionRepository::new();
-        let session = test_session(token_hash);
+        let session = create_session(token_hash);
 
         repository
             .insert(&session)

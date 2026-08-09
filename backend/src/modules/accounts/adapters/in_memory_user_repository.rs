@@ -49,6 +49,14 @@ impl UserRepository for InMemoryUserRepository {
 
         Ok(user)
     }
+
+    async fn find_by_ids(&self, ids: &[UserId]) -> Result<Vec<User>, UserRepositoryError> {
+        let users = self.users.read().await;
+
+        let result = ids.iter().filter_map(|id| users.get(id).cloned()).collect();
+
+        Ok(result)
+    }
 }
 
 impl Default for InMemoryUserRepository {
@@ -59,18 +67,10 @@ impl Default for InMemoryUserRepository {
 
 #[cfg(test)]
 mod tests {
-    use crate::modules::accounts::domain::PasswordHash;
+
+    use crate::test_helpers::create_user;
 
     use super::*;
-
-    fn create_user(email: &str) -> User {
-        User::new(
-            UserId::new(),
-            Email::parse(email).expect("Email should be valid"),
-            PasswordHash::from_encoded("$test$password_hash")
-                .expect("Password hash should be valid"),
-        )
-    }
 
     #[tokio::test]
     async fn user_can_be_inserted() {
@@ -170,5 +170,118 @@ mod tests {
             .expect("Repository lookup should succeed");
 
         assert!(result.is_none());
+    }
+
+    #[tokio::test]
+    async fn existing_users_are_returned() {
+        let repository = InMemoryUserRepository::new();
+
+        let first_user = create_user("first@email.com");
+        let second_user = create_user("second@email.com");
+
+        repository
+            .insert(&first_user)
+            .await
+            .expect("User insertion should succeed");
+        repository
+            .insert(&second_user)
+            .await
+            .expect("User insertion should succeed");
+
+        let ids = vec![first_user.id(), second_user.id()];
+
+        let result = repository
+            .find_by_ids(&ids)
+            .await
+            .expect("User lookup should succeed");
+
+        assert_eq!(result.len(), 2);
+        assert!(result.contains(&first_user));
+        assert!(result.contains(&second_user));
+    }
+
+    #[tokio::test]
+    async fn unknown_ids_are_ignored() {
+        let repository = InMemoryUserRepository::new();
+
+        let first_user = create_user("first@email.com");
+        let second_user = create_user("second@email.com");
+
+        repository
+            .insert(&first_user)
+            .await
+            .expect("User insertion should succeed");
+
+        let ids = vec![first_user.id(), second_user.id()];
+
+        let result = repository
+            .find_by_ids(&ids)
+            .await
+            .expect("User lookup should succeed");
+
+        assert_eq!(result.len(), 1);
+        assert!(result.contains(&first_user));
+        assert!(!result.contains(&second_user));
+    }
+
+    #[tokio::test]
+    async fn empty_id_list_returns_empty_vec() {
+        let repository = InMemoryUserRepository::new();
+
+        let first_user = create_user("first@email.com");
+        let second_user = create_user("second@email.com");
+
+        repository
+            .insert(&first_user)
+            .await
+            .expect("User insertion should succeed");
+        repository
+            .insert(&second_user)
+            .await
+            .expect("User insertion should succeed");
+
+        let ids = vec![];
+
+        let result = repository
+            .find_by_ids(&ids)
+            .await
+            .expect("User lookup should succeed");
+
+        assert_eq!(result.len(), 0);
+        assert!(!result.contains(&first_user));
+        assert!(!result.contains(&second_user));
+    }
+    #[tokio::test]
+    async fn only_requested_users_are_returned() {
+        let repository = InMemoryUserRepository::new();
+
+        let first_user = create_user("first@email.com");
+        let second_user = create_user("second@email.com");
+        let third_user = create_user("third@email.com");
+
+        repository
+            .insert(&first_user)
+            .await
+            .expect("User insertion should succeed");
+        repository
+            .insert(&second_user)
+            .await
+            .expect("User insertion should succeed");
+        repository
+            .insert(&third_user)
+            .await
+            .expect("User insertion should succeed");
+
+        let ids = vec![first_user.id(), second_user.id()];
+
+        let result = repository
+            .find_by_ids(&ids)
+            .await
+            .expect("User lookup should succeed");
+
+        assert_eq!(result.len(), 2);
+        assert!(result.contains(&first_user));
+        assert!(result.contains(&second_user));
+        assert!(!result.contains(&third_user));
     }
 }

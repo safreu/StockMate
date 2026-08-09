@@ -3,6 +3,7 @@ use serde::{Deserialize, Serialize};
 #[derive(Debug, Deserialize)]
 pub struct RegisterUserRequest {
     pub email: String,
+    pub display_name: String,
     pub password: String,
 }
 

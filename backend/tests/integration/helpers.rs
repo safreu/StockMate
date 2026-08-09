@@ -1,5 +1,5 @@
 use backend::modules::accounts::domain::{
-    Email, PasswordHash, Session, SessionId, SessionTokenHash, User, UserId,
+    DisplayName, Email, PasswordHash, Session, SessionId, SessionTokenHash, User, UserId,
 };
 use chrono::{Duration, TimeZone, Utc};
 
@@ -26,6 +26,7 @@ pub fn test_user(email: &str) -> User {
         UserId::new(),
         Email::parse(email)
             .expect("Test email should be valid"),
+        DisplayName::parse("valid name").expect("Test display name should be valid"),
         PasswordHash::from_encoded("$argon2id$v=19$m=19456,t=2,p=1$c29tZXNhbHQ$7Qdih1MuhjZehB6Svms5vcBhkM4A5f7QWwD4iM4R+AE")
             .expect("Test password hash should be valid"),
     )

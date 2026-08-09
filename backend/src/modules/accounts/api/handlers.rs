@@ -15,11 +15,13 @@ pub async fn register_user(
 ) -> Result<(StatusCode, Json<RegisterUserResponse>), ApiError> {
     let command = RegisterUserCommand {
         email: request.email,
+        display_name: request.display_name,
         password: request.password,
     };
 
     let user_id = state
-        .register_user_service
+        .accounts
+        .register_user
         .execute(command)
         .await
         .map_err(ApiError::from)?;
@@ -41,21 +43,22 @@ pub async fn login_user(
         password: request.password,
     };
 
-    let user_id = state.login_user_service.execute(command).await?;
+    let user_id = state.accounts.login_user.execute(command).await?;
 
     let session = state
-        .create_session_service
+        .accounts
+        .create_session
         .execute(CreateSessionCommand { user_id })
         .await?;
 
     let cookie = Cookie::build((
-        state.session_cookie.name.clone(),
+        state.accounts.session_cookie.name.clone(),
         session.token.into_string(),
     ))
     .path("/")
     .http_only(true)
     .same_site(SameSite::Lax)
-    .secure(state.session_cookie.secure)
+    .secure(state.accounts.session_cookie.secure)
     .build();
 
     let jar = jar.add(cookie);

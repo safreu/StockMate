@@ -1,4 +1,7 @@
-use crate::modules::accounts::domain::{Email, User, UserId};
+use crate::{
+    modules::accounts::domain::{Email, User, UserId},
+    shared::db::PersistenceError,
+};
 use async_trait::async_trait;
 
 /// Persists and retrieves users.
@@ -18,6 +21,8 @@ pub trait UserRepository: Send + Sync {
 
     /// Return the user with the given email, or `None` if no such user exists.
     async fn find_by_email(&self, email: &Email) -> Result<Option<User>, UserRepositoryError>;
+
+    async fn find_by_ids(&self, ids: &[UserId]) -> Result<Vec<User>, UserRepositoryError>;
 }
 
 /// Errors returned by `UserRepository` implementations.
@@ -25,10 +30,8 @@ pub trait UserRepository: Send + Sync {
 pub enum UserRepositoryError {
     #[error("Email already exists")]
     EmailAlreadyExists,
-    #[error("Database operation failed")]
-    Database,
     #[error("Stored user data is invalid")]
     InvalidStoredData,
-    #[error("Database is unavailable")]
-    Unavailable,
+    #[error(transparent)]
+    Persistence(#[from] PersistenceError),
 }

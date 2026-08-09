@@ -1,11 +1,14 @@
 use async_trait::async_trait;
 use chrono::{DateTime, Utc};
-use sqlx::{PgPool, Row, postgres::PgRow};
+use sqlx::PgPool;
 use uuid::Uuid;
 
-use crate::modules::accounts::{
-    domain::{Session, SessionId, SessionTokenHash, UserId},
-    ports::{SessionRepository, SessionRepositoryError},
+use crate::{
+    modules::accounts::{
+        domain::{Session, SessionId, SessionTokenHash, UserId},
+        ports::{SessionRepository, SessionRepositoryError},
+    },
+    shared::db::map_sqlx_error,
 };
 
 pub struct PostgresSessionRepository {
@@ -21,7 +24,7 @@ impl PostgresSessionRepository {
 #[async_trait]
 impl SessionRepository for PostgresSessionRepository {
     async fn insert(&self, session: &Session) -> Result<(), SessionRepositoryError> {
-        sqlx::query(
+        sqlx::query!(
             r#"
             INSERT INTO sessions (
                 id,
@@ -32,12 +35,12 @@ impl SessionRepository for PostgresSessionRepository {
             )
             VALUES ($1, $2, $3, $4, $5)
             "#,
+            session.id().into_uuid(),
+            session.user_id().into_uuid(),
+            session.token_hash().as_str(),
+            session.expires_at(),
+            session.created_at(),
         )
-        .bind(session.id().as_uuid())
-        .bind(session.user_id().as_uuid())
-        .bind(session.token_hash().as_str())
-        .bind(session.expires_at())
-        .bind(session.created_at())
         .execute(&self.pool)
         .await
         .map_err(map_insert_error)?;
@@ -49,70 +52,63 @@ impl SessionRepository for PostgresSessionRepository {
         &self,
         token_hash: &SessionTokenHash,
     ) -> Result<Option<Session>, SessionRepositoryError> {
-        let row = sqlx::query(
+        let row = sqlx::query_as!(
+            SessionRow,
             r#"
             SELECT id, user_id, token_hash, expires_at, created_at
             FROM sessions
             WHERE token_hash = $1
             "#,
+            token_hash.as_str(),
         )
-        .bind(token_hash.as_str())
         .fetch_optional(&self.pool)
         .await
-        .map_err(map_database_error)?;
+        .map_err(map_sqlx_error)?;
 
-        row.map(row_to_session).transpose()
+        row.map(Session::try_from).transpose()
     }
 
     async fn delete_by_token_hash(
         &self,
         token_hash: &SessionTokenHash,
     ) -> Result<(), SessionRepositoryError> {
-        sqlx::query(
+        sqlx::query!(
             r#"
             DELETE FROM sessions
             WHERE token_hash = $1
             "#,
+            token_hash.as_str(),
         )
-        .bind(token_hash.as_str())
         .execute(&self.pool)
         .await
-        .map_err(map_database_error)?;
+        .map_err(map_sqlx_error)?;
 
         Ok(())
     }
 }
 
-fn row_to_session(row: PgRow) -> Result<Session, SessionRepositoryError> {
-    let id: Uuid = row
-        .try_get("id")
-        .map_err(|_| SessionRepositoryError::Database)?;
+struct SessionRow {
+    id: Uuid,
+    user_id: Uuid,
+    token_hash: String,
+    expires_at: DateTime<Utc>,
+    created_at: DateTime<Utc>,
+}
 
-    let user_id: Uuid = row
-        .try_get("user_id")
-        .map_err(|_| SessionRepositoryError::Database)?;
+impl TryFrom<SessionRow> for Session {
+    type Error = SessionRepositoryError;
 
-    let token_hash: String = row
-        .try_get("token_hash")
-        .map_err(|_| SessionRepositoryError::Database)?;
-
-    let expires_at: DateTime<Utc> = row
-        .try_get("expires_at")
-        .map_err(|_| SessionRepositoryError::Database)?;
-
-    let created_at: DateTime<Utc> = row
-        .try_get("created_at")
-        .map_err(|_| SessionRepositoryError::Database)?;
-
-    Session::new(
-        SessionId::from_uuid(id),
-        UserId::from_uuid(user_id),
-        SessionTokenHash::from_encoded(&token_hash)
-            .map_err(|_| SessionRepositoryError::InvalidStoredData)?,
-        expires_at,
-        created_at,
-    )
-    .map_err(|_| SessionRepositoryError::InvalidStoredData)
+    fn try_from(value: SessionRow) -> Result<Self, Self::Error> {
+        Session::new(
+            SessionId::from_uuid(value.id),
+            UserId::from_uuid(value.user_id),
+            SessionTokenHash::from_encoded(&value.token_hash)
+                .map_err(|_| SessionRepositoryError::InvalidStoredData)?,
+            value.expires_at,
+            value.created_at,
+        )
+        .map_err(|_| SessionRepositoryError::InvalidStoredData)
+    }
 }
 
 const SESSIONS_TOKEN_HASH_UNIQUE_CONSTRAINT: &str = "sessions_token_hash_unique";
@@ -125,14 +121,5 @@ fn map_insert_error(error: sqlx::Error) -> SessionRepositoryError {
         return SessionRepositoryError::TokenHashAlreadyExists;
     }
 
-    map_database_error(error)
-}
-
-fn map_database_error(error: sqlx::Error) -> SessionRepositoryError {
-    match error {
-        sqlx::Error::PoolTimedOut | sqlx::Error::PoolClosed | sqlx::Error::Io(_) => {
-            SessionRepositoryError::Unavailable
-        }
-        _ => SessionRepositoryError::Database,
-    }
+    map_sqlx_error(error).into()
 }

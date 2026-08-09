@@ -2,6 +2,7 @@ use async_trait::async_trait;
 
 use crate::modules::accounts::domain::Session;
 use crate::modules::accounts::domain::SessionTokenHash;
+use crate::shared::db::PersistenceError;
 
 /// Persists and retrieves authentication sessions.
 ///
@@ -32,12 +33,10 @@ pub trait SessionRepository: Send + Sync {
 /// Errors returned by `SessionRepository` implementations.
 #[derive(Debug, PartialEq, Eq, thiserror::Error)]
 pub enum SessionRepositoryError {
-    #[error("Database operation failed")]
-    Database,
     #[error("Stored session data is invalid")]
     InvalidStoredData,
-    #[error("Database is unavailable")]
-    Unavailable,
     #[error("Session token hash already exists")]
     TokenHashAlreadyExists,
+    #[error(transparent)]
+    Persistence(#[from] PersistenceError),
 }

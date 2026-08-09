@@ -2,9 +2,12 @@ use std::sync::Arc;
 
 use chrono::{DateTime, Duration, Utc};
 
-use crate::modules::accounts::{
-    domain::{Session, SessionId, SessionToken, UserId},
-    ports::{SessionRepository, SessionTokenGenerator, SessionTokenHasher},
+use crate::{
+    modules::accounts::{
+        domain::{Session, SessionId, SessionToken, UserId},
+        ports::{SessionRepository, SessionTokenGenerator, SessionTokenHasher},
+    },
+    shared::application::InternalError,
 };
 
 pub struct CreateSessionCommand {
@@ -41,10 +44,11 @@ impl CreateSessionService {
     pub async fn execute(
         &self,
         command: CreateSessionCommand,
-    ) -> Result<CreateSessionResult, CreateSessionError> {
+    ) -> Result<CreateSessionResult, InternalError> {
         let token = self.token_generator.generate().map_err(|error| {
             tracing::error!(error=?error, user_id=%command.user_id, "failed to generate session token");
-            CreateSessionError::TokenGenerationFailed
+            InternalError::Failed
+
         })?;
 
         let token_hash = self.token_hasher.hash(&token);
@@ -61,91 +65,31 @@ impl CreateSessionService {
         )
         .map_err(|error| {
             tracing::error!(error=?error, user_id=%command.user_id, "failed to construct session");
-            CreateSessionError::InvalidSession
+            InternalError::Failed
         })?;
 
         self.session_repository.insert(&session).await.map_err(|error| {
             tracing::error!(error=?error, user_id=%command.user_id, session_id=%session.id(), "failed to persist session");
-            CreateSessionError::RepositoryFailed
+            InternalError::Failed
         })?;
 
         Ok(CreateSessionResult { token, expires_at })
     }
 }
 
-#[derive(Debug, PartialEq, Eq, thiserror::Error)]
-pub enum CreateSessionError {
-    #[error("Session token generation failed")]
-    TokenGenerationFailed,
-    #[error("Session could not be constructed")]
-    InvalidSession,
-    #[error("Session repository failed")]
-    RepositoryFailed,
-}
-
 #[cfg(test)]
 mod tests {
 
-    use crate::modules::accounts::{
-        adapters::{InMemorySessionRepository, Sha256SessionTokenHasher},
-        ports::SessionTokenGeneratorError,
+    use crate::{
+        modules::accounts::adapters::{InMemorySessionRepository, Sha256SessionTokenHasher},
+        test_helpers::{FailingSessionTokenGenerator, build_create_session_service},
     };
 
     use super::*;
 
-    struct FixedSessionTokenGenerator {
-        token: String,
-    }
-
-    impl FixedSessionTokenGenerator {
-        fn new(token: &str) -> Self {
-            Self {
-                token: token.to_owned(),
-            }
-        }
-    }
-
-    impl SessionTokenGenerator for FixedSessionTokenGenerator {
-        fn generate(&self) -> Result<SessionToken, SessionTokenGeneratorError> {
-            Ok(SessionToken::from_string(self.token.clone())
-                .expect("Test session token should be valid"))
-        }
-    }
-
-    struct FailingSessionTokenGenerator;
-
-    impl SessionTokenGenerator for FailingSessionTokenGenerator {
-        fn generate(&self) -> Result<SessionToken, SessionTokenGeneratorError> {
-            Err(SessionTokenGeneratorError::GenerationFailed)
-        }
-    }
-
-    fn test_service() -> (
-        CreateSessionService,
-        Arc<InMemorySessionRepository>,
-        Arc<Sha256SessionTokenHasher>,
-    ) {
-        let repository = Arc::new(InMemorySessionRepository::new());
-
-        let generator = Arc::new(FixedSessionTokenGenerator::new(
-            "this-session-token-is-fixed",
-        ));
-
-        let hasher = Arc::new(Sha256SessionTokenHasher::new());
-
-        let service = CreateSessionService::new(
-            repository.clone(),
-            generator,
-            hasher.clone(),
-            Duration::hours(1),
-        );
-
-        (service, repository, hasher)
-    }
-
     #[tokio::test]
     async fn session_is_created_for_user() {
-        let (service, repository, hasher) = test_service();
+        let (service, repository, hasher) = build_create_session_service();
         let user_id = UserId::new();
 
         let result = service
@@ -166,7 +110,7 @@ mod tests {
 
     #[tokio::test]
     async fn returned_token_matches_stored_hash() {
-        let (service, repository, hasher) = test_service();
+        let (service, repository, hasher) = build_create_session_service();
         let user_id = UserId::new();
 
         let result = service
@@ -188,7 +132,7 @@ mod tests {
 
     #[tokio::test]
     async fn expiration_matches_configured_lifetime() {
-        let (service, _, _) = test_service();
+        let (service, _, _) = build_create_session_service();
         let user_id = UserId::new();
 
         let before = Utc::now();
@@ -223,9 +167,6 @@ mod tests {
             })
             .await;
 
-        assert!(matches!(
-            result,
-            Err(CreateSessionError::TokenGenerationFailed)
-        ));
+        assert!(matches!(result, Err(InternalError::Failed)));
     }
 }
