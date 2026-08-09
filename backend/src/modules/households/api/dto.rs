@@ -22,3 +22,10 @@ pub struct HouseholdResponse {
 pub struct AddHouseholdMemberRequest {
     pub email: String,
 }
+
+#[derive(Debug, Serialize)]
+pub struct HouseholdMemberResponse {
+    pub user_id: String,
+    pub display_name: String,
+    pub role: String,
+}

@@ -1,6 +1,6 @@
 use crate::{
     modules::households::application::{
-        AddHouseholdMemberError, CreateHouseholdError, GetHouseholdError,
+        AddHouseholdMemberError, CreateHouseholdError, GetHouseholdError, ListHouseholdMembersError,
     },
     shared::api::error::ApiError,
 };
@@ -66,6 +66,21 @@ impl From<AddHouseholdMemberError> for ApiError {
             ),
 
             AddHouseholdMemberError::Internal(_) => ApiError::internal_error(),
+        }
+    }
+}
+
+impl From<ListHouseholdMembersError> for ApiError {
+    fn from(error: ListHouseholdMembersError) -> Self {
+        match error {
+            ListHouseholdMembersError::NotFound => {
+                ApiError::not_found("household_not_found", "The household was not found")
+            }
+            ListHouseholdMembersError::Forbidden => ApiError::forbidden(
+                "household_access_forbidden",
+                "You do not have access to this household",
+            ),
+            ListHouseholdMembersError::Internal(_) => ApiError::internal_error(),
         }
     }
 }

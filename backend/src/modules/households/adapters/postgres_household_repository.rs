@@ -209,6 +209,26 @@ impl HouseholdRepository for PostgresHouseholdRepository {
 
         Ok(())
     }
+
+    async fn find_members(
+        &self,
+        household_id: &HouseholdId,
+    ) -> Result<Vec<HouseholdMember>, HouseholdRepositoryError> {
+        let rows = sqlx::query_as!(
+            HouseholdMemberRow,
+            r#"
+            SELECT household_id, user_id, role, created_at
+            FROM household_members
+            WHERE household_id = $1 ORDER BY created_at
+            "#,
+            household_id.into_uuid()
+        )
+        .fetch_all(&self.pool)
+        .await
+        .map_err(map_sqlx_error)?;
+
+        rows.into_iter().map(HouseholdMember::try_from).collect()
+    }
 }
 
 const HOUSEHOLDS_PERSONAL_OWNER_UNIQUE_INDEX: &str = "households_personal_owner_unique_idx";

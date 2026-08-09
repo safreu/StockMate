@@ -464,3 +464,63 @@ curl -i \
 ```
 
 Expected status: `401 Unauthorized`.
+
+## List household members
+
+Returns all members of a household. The authenticated user must belong to the household.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  "$BASE_URL/api/v1/households/<household-uuid>/members"
+```
+
+Expected status: `200 OK`.
+
+Example response:
+
+```json
+[
+  {
+    "user_id": "<user-uuid>",
+    "display_name": "Samuel",
+    "role": "owner"
+  },
+  {
+    "user_id": "<user-uuid>",
+    "display_name": "Another User",
+    "role": "member"
+  }
+]
+```
+
+## List members of an unknown household
+
+```bash
+curl -i \
+  -b cookies.txt \
+  "$BASE_URL/api/v1/households/00000000-0000-0000-0000-000000000000/members"
+```
+
+Expected status: `404 Not Found`.
+
+## List household members without membership
+
+Use the ID of a household the authenticated user does not belong to.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  "$BASE_URL/api/v1/households/<other-household-uuid>/members"
+```
+
+Expected status: `403 Forbidden`.
+
+## List household members without authentication
+
+```bash
+curl -i \
+  "$BASE_URL/api/v1/households/<household-uuid>/members"
+```
+
+Expected status: `401 Unauthorized`.

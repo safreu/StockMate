@@ -7,7 +7,7 @@ use crate::modules::accounts::adapters::InMemoryUserRepository;
 use crate::modules::accounts::domain::UserId;
 use crate::modules::households::application::{
     AddHouseholdMemberService, CreateHouseholdService, GetHouseholdService,
-    ListHouseholdsForUserService,
+    ListHouseholdMembersService, ListHouseholdsForUserService,
 };
 use crate::modules::households::domain::{
     HouseholdId, HouseholdKind, HouseholdName, HouseholdRole,
@@ -75,6 +75,15 @@ impl HouseholdRepository for FailingHouseholdRepository {
     }
 
     async fn add_member(&self, member: &HouseholdMember) -> Result<(), HouseholdRepositoryError> {
+        Err(HouseholdRepositoryError::Persistence(
+            PersistenceError::Failed,
+        ))
+    }
+
+    async fn find_members(
+        &self,
+        household_id: &HouseholdId,
+    ) -> Result<Vec<HouseholdMember>, HouseholdRepositoryError> {
         Err(HouseholdRepositoryError::Persistence(
             PersistenceError::Failed,
         ))
@@ -197,4 +206,25 @@ impl HouseholdRepository for DuplicateOnAddHouseholdRepository {
     async fn add_member(&self, member: &HouseholdMember) -> Result<(), HouseholdRepositoryError> {
         Err(HouseholdRepositoryError::MemberAlreadyExists)
     }
+
+    async fn find_members(
+        &self,
+        household_id: &HouseholdId,
+    ) -> Result<Vec<HouseholdMember>, HouseholdRepositoryError> {
+        self.inner.find_members(household_id).await
+    }
+}
+
+pub fn build_list_household_members_service() -> (
+    ListHouseholdMembersService,
+    Arc<InMemoryHouseholdRepository>,
+    Arc<InMemoryUserRepository>,
+) {
+    let household_repository = Arc::new(InMemoryHouseholdRepository::new());
+    let user_repository = Arc::new(InMemoryUserRepository::new());
+
+    let service =
+        ListHouseholdMembersService::new(household_repository.clone(), user_repository.clone());
+
+    (service, household_repository, user_repository)
 }

@@ -1,6 +1,6 @@
 use crate::modules::accounts::domain::{DisplayName, Email, PasswordHash, UserId};
 
-#[derive(Clone)]
+#[derive(Clone, PartialEq)]
 pub struct User {
     id: UserId,
     display_name: DisplayName,
