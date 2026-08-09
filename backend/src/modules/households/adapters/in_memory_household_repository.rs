@@ -178,6 +178,18 @@ impl HouseholdRepository for InMemoryHouseholdRepository {
 
         Ok(())
     }
+
+    async fn update(&self, household: &Household) -> Result<(), HouseholdRepositoryError> {
+        let mut state = self.state.write().await;
+
+        if !state.households.contains_key(&household.id()) {
+            return Err(HouseholdRepositoryError::HouseholdNotFound);
+        }
+
+        state.households.insert(household.id(), household.clone());
+
+        Ok(())
+    }
 }
 
 #[cfg(test)]
@@ -728,5 +740,53 @@ mod tests {
         let result = repository.remove_member(&household.id(), &member_id).await;
 
         assert_eq!(result, Err(HouseholdRepositoryError::MemberNotFound))
+    }
+
+    #[tokio::test]
+    async fn updated_household_can_be_loaded() {
+        let repository = InMemoryHouseholdRepository::new();
+
+        let (mut household, owner) = create_owned_household(UserId::new(), HouseholdKind::Shared);
+
+        repository
+            .create_with_owner(&household, &owner)
+            .await
+            .expect("Household creation should succeed");
+
+        let new_name =
+            HouseholdName::parse("Updated household").expect("Test household name should be valid");
+
+        household.rename(new_name, Utc::now());
+
+        repository
+            .update(&household)
+            .await
+            .expect("Household update should succeed");
+
+        let stored = repository
+            .find_by_id(&household.id())
+            .await
+            .expect("Household lookup should succeed")
+            .expect("Household should succeed");
+
+        assert_eq!(stored, household)
+    }
+
+    #[tokio::test]
+    async fn updating_unknown_household_returns_household_not_found() {
+        let repository = InMemoryHouseholdRepository::new();
+
+        let owner_id = UserId::new();
+
+        let (mut household, _) = create_owned_household(owner_id, HouseholdKind::Shared);
+
+        let new_name =
+            HouseholdName::parse("Updated household").expect("Test household name should be valid");
+
+        household.rename(new_name, Utc::now());
+
+        let result = repository.update(&household).await;
+
+        assert_eq!(result, Err(HouseholdRepositoryError::HouseholdNotFound))
     }
 }

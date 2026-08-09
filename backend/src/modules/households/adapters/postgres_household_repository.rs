@@ -253,6 +253,34 @@ impl HouseholdRepository for PostgresHouseholdRepository {
 
         Ok(())
     }
+
+    async fn update(&self, household: &Household) -> Result<(), HouseholdRepositoryError> {
+        let result = sqlx::query!(
+            r#"
+            UPDATE households
+            SET 
+                name = $2,
+                kind = $3,
+                personal_owner_id = $4,
+                updated_at = $5
+            WHERE id = $1
+            "#,
+            household.id().into_uuid(),
+            household.name().as_str(),
+            household.kind().as_str(),
+            household.personal_owner_id().map(|id| id.into_uuid()),
+            household.updated_at(),
+        )
+        .execute(&self.pool)
+        .await
+        .map_err(map_sqlx_error)?;
+
+        if result.rows_affected() == 0 {
+            return Err(HouseholdRepositoryError::HouseholdNotFound);
+        }
+
+        Ok(())
+    }
 }
 
 const HOUSEHOLDS_PERSONAL_OWNER_UNIQUE_INDEX: &str = "households_personal_owner_unique_idx";

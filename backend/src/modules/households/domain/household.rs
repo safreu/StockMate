@@ -71,6 +71,11 @@ impl Household {
     pub fn updated_at(&self) -> DateTime<Utc> {
         self.updated_at
     }
+
+    pub fn rename(&mut self, name: HouseholdName, now: DateTime<Utc>) {
+        self.name = name;
+        self.updated_at = now;
+    }
 }
 
 #[derive(Debug, PartialEq, Eq, thiserror::Error)]

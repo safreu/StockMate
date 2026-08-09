@@ -184,6 +184,12 @@ impl HouseholdRepository for FailingHouseholdRepository {
             PersistenceError::Failed,
         ))
     }
+
+    async fn update(&self, household: &Household) -> Result<(), HouseholdRepositoryError> {
+        Err(HouseholdRepositoryError::Persistence(
+            PersistenceError::Failed,
+        ))
+    }
 }
 
 pub struct DuplicateOnAddHouseholdRepository {
@@ -247,6 +253,10 @@ impl HouseholdRepository for DuplicateOnAddHouseholdRepository {
         user_id: &UserId,
     ) -> Result<(), HouseholdRepositoryError> {
         self.inner.remove_member(household_id, user_id).await
+    }
+
+    async fn update(&self, household: &Household) -> Result<(), HouseholdRepositoryError> {
+        self.inner.update(household).await
     }
 }
 
@@ -316,5 +326,9 @@ impl HouseholdRepository for MissingOnRemoveHouseholdRepository {
         user_id: &UserId,
     ) -> Result<(), HouseholdRepositoryError> {
         Err(HouseholdRepositoryError::MemberNotFound)
+    }
+
+    async fn update(&self, household: &Household) -> Result<(), HouseholdRepositoryError> {
+        self.inner.update(household).await
     }
 }
