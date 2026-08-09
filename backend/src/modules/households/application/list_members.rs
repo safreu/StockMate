@@ -140,7 +140,6 @@ pub enum ListHouseholdMembersError {
 
 #[cfg(test)]
 mod tests {
-    use chrono::Utc;
 
     use crate::{
         modules::{
@@ -149,7 +148,8 @@ mod tests {
         },
         test_helpers::{
             FailingHouseholdRepository, FailingUserRepository, MissingUserRepository,
-            build_list_household_members_service, create_owned_household, create_user,
+            build_list_household_members_service, create_owned_household, insert_member,
+            insert_owned_household, insert_user,
         },
     };
 
@@ -160,38 +160,13 @@ mod tests {
         let (service, household_repository, user_repository) =
             build_list_household_members_service();
 
-        let owner = create_user("owner@email.com");
-        let member = create_user("member@email.com");
+        let owner = insert_user(&user_repository, "owner@email.com").await;
+        let member = insert_user(&user_repository, "member@email.com").await;
 
-        user_repository
-            .insert(&owner)
-            .await
-            .expect("Owner should be insertable");
+        let (household, _) =
+            insert_owned_household(&household_repository, owner.id(), HouseholdKind::Shared).await;
 
-        user_repository
-            .insert(&member)
-            .await
-            .expect("Owner should be insertable");
-
-        let (household, owner_membership) =
-            create_owned_household(owner.id(), HouseholdKind::Shared);
-
-        household_repository
-            .create_with_owner(&household, &owner_membership)
-            .await
-            .expect("Household creation should succeed");
-
-        let member_membership = HouseholdMember::new(
-            household.id(),
-            member.id(),
-            HouseholdRole::Member,
-            Utc::now(),
-        );
-
-        household_repository
-            .add_member(&member_membership)
-            .await
-            .expect("Adding member should succeed");
+        insert_member(&household_repository, household.id(), member.id()).await;
 
         let command = ListHouseholdMembersCommand {
             household_id: household.id(),
@@ -211,38 +186,13 @@ mod tests {
         let (service, household_repository, user_repository) =
             build_list_household_members_service();
 
-        let owner = create_user("owner@email.com");
-        let member = create_user("member@email.com");
+        let owner = insert_user(&user_repository, "owner@email.com").await;
+        let member = insert_user(&user_repository, "member@email.com").await;
 
-        user_repository
-            .insert(&owner)
-            .await
-            .expect("Owner should be insertable");
+        let (household, _) =
+            insert_owned_household(&household_repository, owner.id(), HouseholdKind::Shared).await;
 
-        user_repository
-            .insert(&member)
-            .await
-            .expect("Owner should be insertable");
-
-        let (household, owner_membership) =
-            create_owned_household(owner.id(), HouseholdKind::Shared);
-
-        household_repository
-            .create_with_owner(&household, &owner_membership)
-            .await
-            .expect("Household creation should succeed");
-
-        let member_membership = HouseholdMember::new(
-            household.id(),
-            member.id(),
-            HouseholdRole::Member,
-            Utc::now(),
-        );
-
-        household_repository
-            .add_member(&member_membership)
-            .await
-            .expect("Adding member should succeed");
+        insert_member(&household_repository, household.id(), member.id()).await;
 
         let command = ListHouseholdMembersCommand {
             household_id: household.id(),

@@ -80,6 +80,7 @@ mod tests {
         modules::households::domain::HouseholdKind,
         test_helpers::{
             FailingHouseholdRepository, build_get_household_service, create_owned_household,
+            insert_owned_household,
         },
     };
 
@@ -91,20 +92,14 @@ mod tests {
 
         let user_id = UserId::new();
 
-        let (household, owner) = create_owned_household(user_id, HouseholdKind::Shared);
-
-        repository
-            .create_with_owner(&household, &owner)
-            .await
-            .expect("Household creation should succeed");
-
-        let command = GetHouseholdCommand {
-            household_id: household.id(),
-            user_id,
-        };
+        let (household, _) =
+            insert_owned_household(&repository, user_id, HouseholdKind::Shared).await;
 
         let result = service
-            .execute(command)
+            .execute(GetHouseholdCommand {
+                household_id: household.id(),
+                user_id,
+            })
             .await
             .expect("Household lookup should succeed");
 
@@ -115,12 +110,12 @@ mod tests {
     async fn unknown_household_returns_not_found() {
         let (service, _) = build_get_household_service();
 
-        let command = GetHouseholdCommand {
-            household_id: HouseholdId::new(),
-            user_id: UserId::new(),
-        };
-
-        let result = service.execute(command).await;
+        let result = service
+            .execute(GetHouseholdCommand {
+                household_id: HouseholdId::new(),
+                user_id: UserId::new(),
+            })
+            .await;
 
         assert_eq!(result, Err(GetHouseholdError::NotFound))
     }
@@ -138,12 +133,12 @@ mod tests {
             .await
             .expect("Household creation should succeed");
 
-        let command = GetHouseholdCommand {
-            household_id: household.id(),
-            user_id: UserId::new(),
-        };
-
-        let result = service.execute(command).await;
+        let result = service
+            .execute(GetHouseholdCommand {
+                household_id: household.id(),
+                user_id: UserId::new(),
+            })
+            .await;
 
         assert_eq!(result, Err(GetHouseholdError::Forbidden))
     }
@@ -153,12 +148,12 @@ mod tests {
         let repository = Arc::new(FailingHouseholdRepository);
         let service = GetHouseholdService::new(repository);
 
-        let command = GetHouseholdCommand {
-            household_id: HouseholdId::new(),
-            user_id: UserId::new(),
-        };
-
-        let result = service.execute(command).await;
+        let result = service
+            .execute(GetHouseholdCommand {
+                household_id: HouseholdId::new(),
+                user_id: UserId::new(),
+            })
+            .await;
 
         assert_eq!(
             result,
