@@ -1,0 +1,18 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE households\n            SET \n                name = $2,\n                kind = $3,\n                personal_owner_id = $4,\n                updated_at = $5\n            WHERE id = $1\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Text",
+        "Text",
+        "Uuid",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "c399b2e99a0e60f2817b70006070df221936bf628914aea3537146eac11bab45"
+}

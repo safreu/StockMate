@@ -475,3 +475,47 @@ async fn removing_unknown_member_returns_not_found(pool: PgPool) {
 
     assert_eq!(result, Err(HouseholdRepositoryError::MemberNotFound))
 }
+
+#[sqlx::test]
+async fn updated_household_can_be_loaded(pool: PgPool) {
+    let user_repository = PostgresUserRepository::new(pool.clone());
+    let household_repository = PostgresHouseholdRepository::new(pool);
+
+    let owner = insert_test_user(&user_repository).await;
+
+    let (mut household, _) =
+        insert_owned_household(&household_repository, owner.id(), HouseholdKind::Shared).await;
+
+    household.rename(
+        HouseholdName::parse("New name").expect("New name should be valid"),
+        Utc::now().trunc_subsecs(6),
+    );
+
+    household_repository
+        .update(&household)
+        .await
+        .expect("Renaming of household should succeed");
+
+    let result = household_repository
+        .find_by_id(&household.id())
+        .await
+        .expect("Household lookup should succeed");
+
+    assert_eq!(result, Some(household))
+}
+
+#[sqlx::test]
+async fn updating_unknown_household_returns_household_not_found(pool: PgPool) {
+    let household_repository = PostgresHouseholdRepository::new(pool);
+
+    let (mut household, _) = create_owned_household(UserId::new(), HouseholdKind::Shared);
+
+    household.rename(
+        HouseholdName::parse("New name").expect("New name should be valid"),
+        Utc::now().trunc_subsecs(6),
+    );
+
+    let result = household_repository.update(&household).await;
+
+    assert_eq!(result, Err(HouseholdRepositoryError::HouseholdNotFound))
+}

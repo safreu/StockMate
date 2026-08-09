@@ -595,3 +595,81 @@ curl -i \
 ```
 
 Expected status: `401 Unauthorized`.
+
+## Rename a household
+
+The authenticated user must be allowed to modify the household.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X PATCH \
+  "$BASE_URL/api/v1/households/<household-uuid>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Renamed Household"
+  }'
+```
+
+Expected status: `204 No Content`.
+
+## Rename a household with an invalid name
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X PATCH \
+  "$BASE_URL/api/v1/households/<household-uuid>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "   "
+  }'
+```
+
+Expected status: `400 Bad Request`.
+
+## Rename an unknown household
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X PATCH \
+  "$BASE_URL/api/v1/households/00000000-0000-0000-0000-000000000000" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Renamed Household"
+  }'
+```
+
+Expected status: `404 Not Found`.
+
+## Rename a household without permission
+
+Use a session belonging to a normal member of a shared household.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X PATCH \
+  "$BASE_URL/api/v1/households/<household-uuid>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Not Allowed"
+  }'
+```
+
+Expected status: `403 Forbidden`.
+
+## Rename a household without authentication
+
+```bash
+curl -i \
+  -X PATCH \
+  "$BASE_URL/api/v1/households/<household-uuid>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Renamed Household"
+  }'
+```
+
+Expected status: `401 Unauthorized`.

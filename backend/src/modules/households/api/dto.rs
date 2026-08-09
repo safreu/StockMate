@@ -29,3 +29,8 @@ pub struct HouseholdMemberResponse {
     pub display_name: String,
     pub role: String,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct RenameHouseholdRequest {
+    pub name: String,
+}

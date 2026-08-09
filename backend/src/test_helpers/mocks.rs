@@ -184,6 +184,12 @@ impl HouseholdRepository for FailingHouseholdRepository {
             PersistenceError::Failed,
         ))
     }
+
+    async fn update(&self, household: &Household) -> Result<(), HouseholdRepositoryError> {
+        Err(HouseholdRepositoryError::Persistence(
+            PersistenceError::Failed,
+        ))
+    }
 }
 
 pub struct DuplicateOnAddHouseholdRepository {
@@ -247,6 +253,10 @@ impl HouseholdRepository for DuplicateOnAddHouseholdRepository {
         user_id: &UserId,
     ) -> Result<(), HouseholdRepositoryError> {
         self.inner.remove_member(household_id, user_id).await
+    }
+
+    async fn update(&self, household: &Household) -> Result<(), HouseholdRepositoryError> {
+        self.inner.update(household).await
     }
 }
 
@@ -316,5 +326,78 @@ impl HouseholdRepository for MissingOnRemoveHouseholdRepository {
         user_id: &UserId,
     ) -> Result<(), HouseholdRepositoryError> {
         Err(HouseholdRepositoryError::MemberNotFound)
+    }
+
+    async fn update(&self, household: &Household) -> Result<(), HouseholdRepositoryError> {
+        self.inner.update(household).await
+    }
+}
+
+pub struct MissingOnUpdateHouseholdRepository {
+    pub inner: Arc<InMemoryHouseholdRepository>,
+}
+
+#[async_trait::async_trait]
+impl HouseholdRepository for MissingOnUpdateHouseholdRepository {
+    async fn create_with_owner(
+        &self,
+        household: &Household,
+        owner: &HouseholdMember,
+    ) -> Result<(), HouseholdRepositoryError> {
+        self.inner.create_with_owner(household, owner).await
+    }
+
+    async fn find_by_id(
+        &self,
+        id: &HouseholdId,
+    ) -> Result<Option<Household>, HouseholdRepositoryError> {
+        self.inner.find_by_id(id).await
+    }
+
+    async fn find_personal_by_owner(
+        &self,
+        owner: &UserId,
+    ) -> Result<Option<Household>, HouseholdRepositoryError> {
+        self.inner.find_personal_by_owner(owner).await
+    }
+
+    async fn find_for_user(
+        &self,
+        user_id: &UserId,
+    ) -> Result<Vec<Household>, HouseholdRepositoryError> {
+        self.inner.find_for_user(user_id).await
+    }
+
+    async fn find_member(
+        &self,
+        household_id: &HouseholdId,
+        user_id: &UserId,
+    ) -> Result<Option<HouseholdMember>, HouseholdRepositoryError> {
+        self.inner.find_member(household_id, user_id).await
+    }
+
+    async fn add_member(&self, member: &HouseholdMember) -> Result<(), HouseholdRepositoryError> {
+        self.inner.add_member(member).await
+    }
+
+    async fn find_members(
+        &self,
+        household_id: &HouseholdId,
+    ) -> Result<Vec<HouseholdMember>, HouseholdRepositoryError> {
+        self.inner.find_members(household_id).await
+    }
+
+    #[allow(unused_variables)]
+    async fn remove_member(
+        &self,
+        household_id: &HouseholdId,
+        user_id: &UserId,
+    ) -> Result<(), HouseholdRepositoryError> {
+        self.inner.remove_member(household_id, user_id).await
+    }
+
+    #[allow(unused_variables)]
+    async fn update(&self, household: &Household) -> Result<(), HouseholdRepositoryError> {
+        Err(HouseholdRepositoryError::HouseholdNotFound)
     }
 }

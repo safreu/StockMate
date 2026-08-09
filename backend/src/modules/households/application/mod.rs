@@ -21,3 +21,6 @@ mod remove_member;
 pub use remove_member::{
     RemoveHouseholdMemberCommand, RemoveHouseholdMemberError, RemoveHouseholdMemberService,
 };
+
+mod update_name;
+pub use update_name::{RenameHouseholdCommand, RenameHouseholdError, RenameHouseholdService};

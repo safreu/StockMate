@@ -1,7 +1,7 @@
 use crate::{
     modules::households::application::{
         AddHouseholdMemberError, CreateHouseholdError, GetHouseholdError,
-        ListHouseholdMembersError, RemoveHouseholdMemberError,
+        ListHouseholdMembersError, RemoveHouseholdMemberError, RenameHouseholdError,
     },
     shared::api::error::ApiError,
 };
@@ -105,6 +105,24 @@ impl From<RemoveHouseholdMemberError> for ApiError {
                 "The household owner cannot be removed",
             ),
             RemoveHouseholdMemberError::Internal(_) => ApiError::internal_error(),
+        }
+    }
+}
+
+impl From<RenameHouseholdError> for ApiError {
+    fn from(error: RenameHouseholdError) -> Self {
+        match error {
+            RenameHouseholdError::Forbidden => ApiError::forbidden(
+                "household_access_forbidden",
+                "You do not have permission to modify this household",
+            ),
+            RenameHouseholdError::InvalidName => {
+                ApiError::bad_request("invalid_household_name", "The household name is invalid")
+            }
+            RenameHouseholdError::NotFound => {
+                ApiError::not_found("household_not_found", "The household was not found")
+            }
+            RenameHouseholdError::Internal(_) => ApiError::internal_error(),
         }
     }
 }

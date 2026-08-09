@@ -11,12 +11,13 @@ pub use services::{
     build_add_member_service, build_auth_service, build_create_household_service,
     build_create_session_service, build_get_household_service,
     build_list_household_members_service, build_list_households_service, build_login_service,
-    build_register_service, build_remove_household_member_service,
+    build_register_service, build_remove_household_member_service, build_rename_household_service,
 };
 
 mod mocks;
 pub use mocks::{
     DuplicateOnAddHouseholdRepository, FailingHouseholdRepository, FailingPasswordHasher,
     FailingSessionTokenGenerator, FailingUserRepository, FixedSessionTokenGenerator,
-    MissingOnRemoveHouseholdRepository, MissingUserRepository, SharedHouseholdFixture,
+    MissingOnRemoveHouseholdRepository, MissingOnUpdateHouseholdRepository, MissingUserRepository,
+    SharedHouseholdFixture,
 };

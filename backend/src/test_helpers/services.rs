@@ -19,7 +19,7 @@ use crate::{
             application::{
                 AddHouseholdMemberService, CreateHouseholdService, GetHouseholdService,
                 ListHouseholdMembersService, ListHouseholdsForUserService,
-                RemoveHouseholdMemberService,
+                RemoveHouseholdMemberService, RenameHouseholdService,
             },
         },
     },
@@ -155,4 +155,13 @@ pub fn build_remove_household_member_service() -> (
     let service = RemoveHouseholdMemberService::new(household_repository.clone());
 
     (service, household_repository, user_repository)
+}
+
+pub fn build_rename_household_service() -> (RenameHouseholdService, Arc<InMemoryHouseholdRepository>)
+{
+    let repository = Arc::new(InMemoryHouseholdRepository::new());
+
+    let service = RenameHouseholdService::new(repository.clone());
+
+    (service, repository)
 }

@@ -11,12 +11,12 @@ use crate::{
         households::{
             api::dto::{
                 AddHouseholdMemberRequest, CreateHouseholdRequest, CreateHouseholdResponse,
-                HouseholdMemberResponse, HouseholdResponse,
+                HouseholdMemberResponse, HouseholdResponse, RenameHouseholdRequest,
             },
             application::{
                 AddHouseholdMemberCommand, CreateHouseholdCommand, GetHouseholdCommand,
                 ListHouseholdMembersCommand, ListHouseholdsForUserCommand,
-                RemoveHouseholdMemberCommand,
+                RemoveHouseholdMemberCommand, RenameHouseholdCommand,
             },
             domain::{HouseholdId, HouseholdKind},
         },
@@ -170,6 +170,27 @@ pub async fn remove_household_member(
     state
         .households
         .remove_household_member
+        .execute(command)
+        .await
+        .map_err(ApiError::from)?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
+pub async fn rename_household(
+    State(state): State<AppState>,
+    current_user: CurrentUser,
+    Path(household_id): Path<Uuid>,
+    Json(request): Json<RenameHouseholdRequest>,
+) -> Result<StatusCode, ApiError> {
+    let command = RenameHouseholdCommand {
+        requester_id: current_user.user_id(),
+        household_id: HouseholdId::from_uuid(household_id),
+        name: request.name,
+    };
+    state
+        .households
+        .rename_household
         .execute(command)
         .await
         .map_err(ApiError::from)?;
