@@ -154,3 +154,12 @@ pub async fn list_household_members(
 
     Ok(Json(response))
 }
+
+#[allow(unused)]
+pub async fn remove_household_member(
+    State(_state): State<AppState>,
+    _current_user: CurrentUser,
+    Path(_household_id): Path<Uuid>,
+) -> Vec<ApiError> {
+    todo!()
+}

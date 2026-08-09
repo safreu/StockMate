@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use crate::modules::households::application::{
     AddHouseholdMemberService, CreateHouseholdService, GetHouseholdService,
-    ListHouseholdMembersService, ListHouseholdsForUserService,
+    ListHouseholdMembersService, ListHouseholdsForUserService, RemoveHouseholdMemberService,
 };
 
 #[derive(Clone)]
@@ -12,4 +12,5 @@ pub struct HouseholdsState {
     pub get_household_for_user: Arc<GetHouseholdService>,
     pub add_household_member: Arc<AddHouseholdMemberService>,
     pub list_household_members: Arc<ListHouseholdMembersService>,
+    pub remove_household_member: Arc<RemoveHouseholdMemberService>,
 }

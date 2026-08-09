@@ -10,6 +10,7 @@ use crate::{
             application::{
                 AddHouseholdMemberService, CreateHouseholdService, GetHouseholdService,
                 ListHouseholdMembersService, ListHouseholdsForUserService,
+                RemoveHouseholdMemberService,
             },
         },
     },
@@ -37,9 +38,12 @@ pub(super) fn build_households_state(pool: &PgPool) -> HouseholdsState {
     ));
 
     let list_household_members_service = Arc::new(ListHouseholdMembersService::new(
-        household_repository,
+        household_repository.clone(),
         user_repository,
     ));
+
+    let remove_household_member_service =
+        Arc::new(RemoveHouseholdMemberService::new(household_repository));
 
     HouseholdsState {
         create_household: create_household_service,
@@ -47,5 +51,6 @@ pub(super) fn build_households_state(pool: &PgPool) -> HouseholdsState {
         get_household_for_user: get_household_for_user_service,
         add_household_member: add_household_member_service,
         list_household_members: list_household_members_service,
+        remove_household_member: remove_household_member_service,
     }
 }
