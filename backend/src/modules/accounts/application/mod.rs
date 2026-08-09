@@ -12,3 +12,6 @@ pub use authenticate_session::{
     AuthenticateSessionCommand, AuthenticateSessionError, AuthenticateSessionService,
     AuthenticatedUser,
 };
+
+mod update_name;
+pub use update_name::{RenameHouseholdCommand, RenameHouseholdError, RenameHouseholdService};
