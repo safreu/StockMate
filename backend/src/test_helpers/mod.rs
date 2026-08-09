@@ -1,16 +1,22 @@
 mod accounts;
-pub use accounts::{
-    FailingPasswordHasher, FailingSessionTokenGenerator, FailingUserRepository,
-    MissingUserRepository,
-};
-pub use accounts::{
-    build_auth_service, build_create_session_service, build_login_service, build_register_service,
-    create_session, create_user,
-};
+pub use accounts::{create_session, create_user, insert_user};
 
 mod households;
-pub use households::{DuplicateOnAddHouseholdRepository, FailingHouseholdRepository};
 pub use households::{
-    build_add_member_service, build_create_household_service, build_get_household_service,
-    build_list_household_members_service, build_list_households_service, create_owned_household,
+    create_owned_household, create_shared_household_fixture, insert_member, insert_owned_household,
+};
+
+mod services;
+pub use services::{
+    build_add_member_service, build_auth_service, build_create_household_service,
+    build_create_session_service, build_get_household_service,
+    build_list_household_members_service, build_list_households_service, build_login_service,
+    build_register_service, build_remove_household_member_service,
+};
+
+mod mocks;
+pub use mocks::{
+    DuplicateOnAddHouseholdRepository, FailingHouseholdRepository, FailingPasswordHasher,
+    FailingSessionTokenGenerator, FailingUserRepository, FixedSessionTokenGenerator,
+    MissingOnRemoveHouseholdRepository, MissingUserRepository, SharedHouseholdFixture,
 };
