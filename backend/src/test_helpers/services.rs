@@ -11,7 +11,7 @@ use crate::{
             },
             application::{
                 AuthenticateSessionService, CreateSessionService, LoginUserService,
-                RegisterUserService, RenameHouseholdService,
+                RegisterUserService,
             },
         },
         households::{
@@ -19,7 +19,7 @@ use crate::{
             application::{
                 AddHouseholdMemberService, CreateHouseholdService, GetHouseholdService,
                 ListHouseholdMembersService, ListHouseholdsForUserService,
-                RemoveHouseholdMemberService,
+                RemoveHouseholdMemberService, RenameHouseholdService,
             },
         },
     },

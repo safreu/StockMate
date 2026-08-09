@@ -171,6 +171,52 @@ if [[ -z "$HOUSEHOLD_ID" || "$HOUSEHOLD_ID" == "null" ]]; then
 fi
 
 # ---------------------------------------------------------------------------
+# Rename household
+# ---------------------------------------------------------------------------
+
+RENAMED_HOUSEHOLD_NAME="Renamed Smoke Test Household"
+
+STATUS="$(
+    curl -sS \
+        -o "$RESPONSE_FILE" \
+        -w "%{http_code}" \
+        -b "$COOKIE_FILE" \
+        -X PATCH \
+        "$BASE_URL/api/v1/households/$HOUSEHOLD_ID" \
+        -H "Content-Type: application/json" \
+        -d "{
+            \"name\": \"$RENAMED_HOUSEHOLD_NAME\"
+        }"
+)"
+
+assert_status "$STATUS" "204" "rename household"
+
+# ---------------------------------------------------------------------------
+# Verify renamed household
+# ---------------------------------------------------------------------------
+
+STATUS="$(
+    curl -sS \
+        -o "$RESPONSE_FILE" \
+        -w "%{http_code}" \
+        -b "$COOKIE_FILE" \
+        "$BASE_URL/api/v1/households/$HOUSEHOLD_ID"
+)"
+
+assert_status "$STATUS" "200" "get renamed household"
+
+RETURNED_NAME="$(jq -r '.name' "$RESPONSE_FILE")"
+
+if [[ "$RETURNED_NAME" != "$RENAMED_HOUSEHOLD_NAME" ]]; then
+    echo "FAIL: household rename was not persisted"
+    echo "  expected: $RENAMED_HOUSEHOLD_NAME"
+    echo "  actual:   $RETURNED_NAME"
+    exit 1
+fi
+
+echo "PASS: household rename was persisted"
+
+# ---------------------------------------------------------------------------
 # List households
 # ---------------------------------------------------------------------------
 
