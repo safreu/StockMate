@@ -1,1 +1,5 @@
+mod in_memory_category_repository;
+pub use in_memory_category_repository::InMemoryCategoryRepository;
 
+mod in_memory_inventory_item_repository;
+pub use in_memory_inventory_item_repository::InMemoryInventoryItemRepository;

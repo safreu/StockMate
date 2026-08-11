@@ -5,6 +5,7 @@ use crate::modules::{
     inventory::domain::{CategoryId, InventoryItemId, InventoryItemName, InventoryPriority},
 };
 
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct InventoryItem {
     id: InventoryItemId,
     household_id: HouseholdId,

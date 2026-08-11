@@ -15,6 +15,7 @@ pub trait CategoryRepository: Send + Sync {
     async fn find_by_id(
         &self,
         id: &CategoryId,
+        household_id: &HouseholdId,
     ) -> Result<Option<Category>, CategoryRepositoryError>;
 
     async fn find_for_household(
@@ -30,7 +31,11 @@ pub trait CategoryRepository: Send + Sync {
 
     async fn update(&self, category: &Category) -> Result<(), CategoryRepositoryError>;
 
-    async fn delete(&self, category_id: &CategoryId) -> Result<(), CategoryRepositoryError>;
+    async fn delete(
+        &self,
+        category_id: &CategoryId,
+        household_id: &HouseholdId,
+    ) -> Result<(), CategoryRepositoryError>;
 }
 
 #[derive(Debug, PartialEq, Eq, thiserror::Error)]
@@ -39,7 +44,6 @@ pub enum CategoryRepositoryError {
     CategoryAlreadyExists,
     #[error("Category not found")]
     CategoryNotFound,
-
     #[error("Invalid stored category data")]
     InvalidStoredData,
     #[error(transparent)]

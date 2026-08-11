@@ -15,6 +15,7 @@ pub trait InventoryItemRepository: Send + Sync {
     async fn find_by_id(
         &self,
         id: &InventoryItemId,
+        household_id: &HouseholdId,
     ) -> Result<Option<InventoryItem>, InventoryItemRepositoryError>;
 
     async fn find_active_by_name(
@@ -23,7 +24,12 @@ pub trait InventoryItemRepository: Send + Sync {
         name: &InventoryItemName,
     ) -> Result<Option<InventoryItem>, InventoryItemRepositoryError>;
 
-    async fn find_for_household(
+    async fn find_active_for_household(
+        &self,
+        household_id: &HouseholdId,
+    ) -> Result<Vec<InventoryItem>, InventoryItemRepositoryError>;
+
+    async fn find_archived_for_household(
         &self,
         household_id: &HouseholdId,
     ) -> Result<Vec<InventoryItem>, InventoryItemRepositoryError>;
