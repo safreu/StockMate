@@ -4,4 +4,5 @@ mod postgres_inventory_item_repository;
 mod postgres_session_repository;
 mod postgres_user_repository;
 
+mod builders;
 mod helpers;

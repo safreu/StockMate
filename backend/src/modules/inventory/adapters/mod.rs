@@ -3,3 +3,8 @@ pub use in_memory_category_repository::InMemoryCategoryRepository;
 
 mod in_memory_inventory_item_repository;
 pub use in_memory_inventory_item_repository::InMemoryInventoryItemRepository;
+
+mod postgres_category_repository;
+pub use postgres_category_repository::PostgresCategoryRepository;
+
+mod postgres_inventory_item_repository;
