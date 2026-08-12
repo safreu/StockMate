@@ -1,3 +1,4 @@
+use crate::integration::builders::{InventoryItemTestBuilder, UserTestBuilder};
 use backend::modules::{
     accounts::{adapters::PostgresUserRepository, ports::UserRepository},
     households::{adapters::PostgresHouseholdRepository, domain::HouseholdKind},
@@ -10,10 +11,7 @@ use backend::modules::{
 use chrono::{SubsecRound, Utc};
 use sqlx::PgPool;
 
-use crate::integration::{
-    builders::{InventoryItemTestBuilder, UserTestBuilder},
-    helpers::insert_owned_household,
-};
+use crate::integration::helpers::insert_owned_household;
 
 #[sqlx::test]
 async fn inventory_item_can_be_inserted_and_loaded(pool: PgPool) {
