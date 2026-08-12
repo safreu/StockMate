@@ -187,7 +187,7 @@ impl InventoryItemTestBuilder {
 
         Self {
             id: InventoryItemId::new(),
-            household_id: household_id,
+            household_id,
             category_id: None,
             name: "Test item".to_owned(),
             current_stock: 0,

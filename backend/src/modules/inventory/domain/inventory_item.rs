@@ -46,6 +46,33 @@ impl InventoryItem {
         }
     }
 
+    #[allow(clippy::too_many_arguments)]
+    pub fn new_with_archived_at(
+        id: InventoryItemId,
+        household_id: HouseholdId,
+        category_id: Option<CategoryId>,
+        name: InventoryItemName,
+        current_stock: u32,
+        reorder_threshold: u32,
+        priority: InventoryPriority,
+        archived_at: Option<DateTime<Utc>>,
+        created_at: DateTime<Utc>,
+        updated_at: DateTime<Utc>,
+    ) -> Self {
+        Self {
+            id,
+            household_id,
+            category_id,
+            name,
+            current_stock,
+            reorder_threshold,
+            priority,
+            archived_at,
+            created_at,
+            updated_at,
+        }
+    }
+
     fn ensure_active(&self) -> Result<(), InventoryItemError> {
         if self.archived_at().is_some() {
             return Err(InventoryItemError::Archived);
