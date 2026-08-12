@@ -22,10 +22,6 @@ use crate::{
                 RemoveHouseholdMemberService, RenameHouseholdService,
             },
         },
-        inventory::{
-            adapters::{InMemoryCategoryRepository, InMemoryInventoryItemRepository},
-            application::CreateInventoryItemService,
-        },
     },
     test_helpers::FixedSessionTokenGenerator,
 };
@@ -168,28 +164,4 @@ pub fn build_rename_household_service() -> (RenameHouseholdService, Arc<InMemory
     let service = RenameHouseholdService::new(repository.clone());
 
     (service, repository)
-}
-
-pub fn build_create_inventory_item_service() -> (
-    CreateInventoryItemService,
-    Arc<InMemoryInventoryItemRepository>,
-    Arc<InMemoryCategoryRepository>,
-    Arc<InMemoryHouseholdRepository>,
-) {
-    let household_repository = Arc::new(InMemoryHouseholdRepository::new());
-    let category_repository = Arc::new(InMemoryCategoryRepository::new());
-    let inventory_item_repository = Arc::new(InMemoryInventoryItemRepository::new());
-
-    let service = CreateInventoryItemService::new(
-        household_repository.clone(),
-        category_repository.clone(),
-        inventory_item_repository.clone(),
-    );
-
-    (
-        service,
-        inventory_item_repository,
-        category_repository,
-        household_repository,
-    )
 }

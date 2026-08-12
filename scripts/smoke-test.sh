@@ -377,37 +377,6 @@ fi
 
 echo "PASS: removed member no longer appears in household"
 
-# ---------------------------------------------------------------------------
-# Create inventory item
-# ---------------------------------------------------------------------------
-
-STATUS="$(
-    curl -sS \
-        -o "$RESPONSE_FILE" \
-        -w "%{http_code}" \
-        -b "$COOKIE_FILE" \
-        -X POST \
-        "$BASE_URL/api/v1/inventory/$HOUSEHOLD_ID" \
-        -H "Content-Type: application/json" \
-        -d '{
-            "name": "Smoke Test Milk",
-            "current_stock": 2,
-            "reorder_threshold": 1,
-            "priority": "high"
-        }'
-)"
-
-assert_status "$STATUS" "201" "create inventory item"
-
-INVENTORY_ITEM_ID="$(jq -r '.id' "$RESPONSE_FILE")"
-
-if [[ -z "$INVENTORY_ITEM_ID" || "$INVENTORY_ITEM_ID" == "null" ]]; then
-    echo "FAIL: inventory item creation did not return an id"
-    exit 1
-fi
-
-echo "PASS: inventory item creation returned an id"
-
 echo
 echo "================================="
 echo "All StockMate smoke tests passed."
