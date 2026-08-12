@@ -6,7 +6,7 @@ use crate::{
     modules::{
         accounts::adapters::PostgresUserRepository,
         households::{
-            adapters::PostgresHouseholdRepository,
+            adapters::{DefaultHouseholdAccessPolicy, PostgresHouseholdRepository},
             application::{
                 AddHouseholdMemberService, CreateHouseholdService, GetHouseholdService,
                 ListHouseholdMembersService, ListHouseholdsForUserService,
@@ -29,8 +29,14 @@ pub(super) fn build_households_state(pool: &PgPool) -> HouseholdsState {
         household_repository.clone(),
     ));
 
-    let get_household_for_user_service =
-        Arc::new(GetHouseholdService::new(household_repository.clone()));
+    let household_access_policy = Arc::new(DefaultHouseholdAccessPolicy::new(
+        household_repository.clone(),
+    ));
+
+    let get_household_for_user_service = Arc::new(GetHouseholdService::new(
+        household_repository.clone(),
+        household_access_policy.clone(),
+    ));
 
     let add_household_member_service = Arc::new(AddHouseholdMemberService::new(
         household_repository.clone(),
@@ -39,11 +45,13 @@ pub(super) fn build_households_state(pool: &PgPool) -> HouseholdsState {
 
     let list_household_members_service = Arc::new(ListHouseholdMembersService::new(
         household_repository.clone(),
+        household_access_policy.clone(),
         user_repository,
     ));
 
     let remove_household_member_service = Arc::new(RemoveHouseholdMemberService::new(
         household_repository.clone(),
+        household_access_policy.clone(),
     ));
 
     let rename_household_service = Arc::new(RenameHouseholdService::new(household_repository));

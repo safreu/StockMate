@@ -8,7 +8,7 @@ use crate::{
         },
         households::{
             domain::{HouseholdId, HouseholdMember, HouseholdRole},
-            ports::HouseholdRepository,
+            ports::{HouseholdAccessError, HouseholdAccessPolicy, HouseholdRepository},
         },
     },
     shared::application::InternalError,
@@ -28,16 +28,19 @@ pub struct HouseholdMemberInfo {
 
 pub struct ListHouseholdMembersService {
     household_repository: Arc<dyn HouseholdRepository>,
+    household_access_policy: Arc<dyn HouseholdAccessPolicy>,
     user_repository: Arc<dyn UserRepository>,
 }
 
 impl ListHouseholdMembersService {
     pub fn new(
         household_repository: Arc<dyn HouseholdRepository>,
+        household_access_policy: Arc<dyn HouseholdAccessPolicy>,
         user_repository: Arc<dyn UserRepository>,
     ) -> Self {
         Self {
             household_repository,
+            household_access_policy,
             user_repository,
         }
     }
@@ -46,32 +49,10 @@ impl ListHouseholdMembersService {
         &self,
         command: ListHouseholdMembersCommand,
     ) -> Result<Vec<HouseholdMemberInfo>, ListHouseholdMembersError> {
-        self.household_repository
-            .find_by_id(&command.household_id)
+        self.household_access_policy
+            .require_member(&command.household_id, &command.requester_id)
             .await
-            .map_err(|error| {
-                tracing::error!(
-                    error = ?error,
-                    household_id = %command.household_id,
-                    "Failed to load household",
-                );
-                InternalError::Failed
-            })?
-            .ok_or(ListHouseholdMembersError::NotFound)?;
-
-        self.household_repository
-            .find_member(&command.household_id, &command.requester_id)
-            .await
-            .map_err(|error| {
-                tracing::error!(
-                    error = ?error,
-                    household_id = %command.household_id,
-                    user_id = %command.requester_id,
-                    "Failed to load household membership",
-                );
-                InternalError::Failed
-            })?
-            .ok_or(ListHouseholdMembersError::Forbidden)?;
+            .map_err(map_household_access_error)?;
 
         let members = self
             .household_repository
@@ -140,13 +121,24 @@ pub enum ListHouseholdMembersError {
     Internal(#[from] InternalError),
 }
 
+fn map_household_access_error(error: HouseholdAccessError) -> ListHouseholdMembersError {
+    match error {
+        HouseholdAccessError::Forbidden => ListHouseholdMembersError::Forbidden,
+        HouseholdAccessError::HouseholdNotFound => ListHouseholdMembersError::NotFound,
+        HouseholdAccessError::Internal(error) => ListHouseholdMembersError::Internal(error),
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
     use crate::{
         modules::{
             accounts::adapters::InMemoryUserRepository,
-            households::{adapters::InMemoryHouseholdRepository, domain::HouseholdKind},
+            households::{
+                adapters::{DefaultHouseholdAccessPolicy, InMemoryHouseholdRepository},
+                domain::HouseholdKind,
+            },
         },
         test_helpers::{
             FailingHouseholdRepository, FailingUserRepository, MissingUserRepository,
@@ -263,9 +255,13 @@ mod tests {
     #[tokio::test]
     async fn household_repository_failure_returns_internal() {
         let household_repository = Arc::new(FailingHouseholdRepository);
+        let policy = Arc::new(DefaultHouseholdAccessPolicy::new(
+            household_repository.clone(),
+        ));
         let user_repository = Arc::new(InMemoryUserRepository::new());
 
-        let service = ListHouseholdMembersService::new(household_repository, user_repository);
+        let service =
+            ListHouseholdMembersService::new(household_repository, policy, user_repository);
 
         let command = ListHouseholdMembersCommand {
             household_id: HouseholdId::new(),
@@ -283,10 +279,13 @@ mod tests {
     #[tokio::test]
     async fn user_repository_failure_returns_failure() {
         let household_repository = Arc::new(InMemoryHouseholdRepository::new());
+        let policy = Arc::new(DefaultHouseholdAccessPolicy::new(
+            household_repository.clone(),
+        ));
         let user_repository = Arc::new(FailingUserRepository);
 
         let service =
-            ListHouseholdMembersService::new(household_repository.clone(), user_repository);
+            ListHouseholdMembersService::new(household_repository.clone(), policy, user_repository);
 
         let owner_id = UserId::new();
 
@@ -313,10 +312,13 @@ mod tests {
     #[tokio::test]
     async fn missing_user_for_an_existing_membership_returns_internal() {
         let household_repository = Arc::new(InMemoryHouseholdRepository::new());
+        let policy = Arc::new(DefaultHouseholdAccessPolicy::new(
+            household_repository.clone(),
+        ));
         let user_repository = Arc::new(MissingUserRepository);
 
         let service =
-            ListHouseholdMembersService::new(household_repository.clone(), user_repository);
+            ListHouseholdMembersService::new(household_repository.clone(), policy, user_repository);
 
         let owner_id = UserId::new();
 

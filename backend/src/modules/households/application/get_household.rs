@@ -5,7 +5,7 @@ use crate::{
         accounts::domain::UserId,
         households::{
             domain::{Household, HouseholdId},
-            ports::HouseholdRepository,
+            ports::{HouseholdAccessError, HouseholdAccessPolicy, HouseholdRepository},
         },
     },
     shared::application::InternalError,
@@ -13,17 +13,22 @@ use crate::{
 
 pub struct GetHouseholdCommand {
     pub household_id: HouseholdId,
-    pub user_id: UserId,
+    pub requester_id: UserId,
 }
 
 pub struct GetHouseholdService {
+    household_access_policy: Arc<dyn HouseholdAccessPolicy>,
     household_repository: Arc<dyn HouseholdRepository>,
 }
 
 impl GetHouseholdService {
-    pub fn new(household_repository: Arc<dyn HouseholdRepository>) -> Self {
+    pub fn new(
+        household_repository: Arc<dyn HouseholdRepository>,
+        household_access_policy: Arc<dyn HouseholdAccessPolicy>,
+    ) -> Self {
         Self {
             household_repository,
+            household_access_policy,
         }
     }
 
@@ -31,6 +36,11 @@ impl GetHouseholdService {
         &self,
         command: GetHouseholdCommand,
     ) -> Result<Household, GetHouseholdError> {
+        self.household_access_policy
+            .require_member(&command.household_id, &command.requester_id)
+            .await
+            .map_err(map_household_access_error)?;
+
         let household = self
             .household_repository
             .find_by_id(&command.household_id)
@@ -43,22 +53,6 @@ impl GetHouseholdService {
                 InternalError::Failed
             })?
             .ok_or(GetHouseholdError::NotFound)?;
-
-        let member = self
-            .household_repository
-            .find_member(&command.household_id, &command.user_id)
-            .await
-            .map_err(|error| {
-                tracing::error!(
-                    error = ?error,
-                    "failed to load household membership",
-                );
-                InternalError::Failed
-            })?;
-
-        if member.is_none() {
-            return Err(GetHouseholdError::Forbidden);
-        }
 
         Ok(household)
     }
@@ -74,10 +68,18 @@ pub enum GetHouseholdError {
     Internal(#[from] InternalError),
 }
 
+fn map_household_access_error(error: HouseholdAccessError) -> GetHouseholdError {
+    match error {
+        HouseholdAccessError::Forbidden => GetHouseholdError::Forbidden,
+        HouseholdAccessError::HouseholdNotFound => GetHouseholdError::NotFound,
+        HouseholdAccessError::Internal(error) => GetHouseholdError::Internal(error),
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{
-        modules::households::domain::HouseholdKind,
+        modules::households::{adapters::DefaultHouseholdAccessPolicy, domain::HouseholdKind},
         test_helpers::{
             FailingHouseholdRepository, build_get_household_service, create_owned_household,
             insert_owned_household,
@@ -98,7 +100,7 @@ mod tests {
         let result = service
             .execute(GetHouseholdCommand {
                 household_id: household.id(),
-                user_id,
+                requester_id: user_id,
             })
             .await
             .expect("Household lookup should succeed");
@@ -113,7 +115,7 @@ mod tests {
         let result = service
             .execute(GetHouseholdCommand {
                 household_id: HouseholdId::new(),
-                user_id: UserId::new(),
+                requester_id: UserId::new(),
             })
             .await;
 
@@ -136,7 +138,7 @@ mod tests {
         let result = service
             .execute(GetHouseholdCommand {
                 household_id: household.id(),
-                user_id: UserId::new(),
+                requester_id: UserId::new(),
             })
             .await;
 
@@ -146,12 +148,13 @@ mod tests {
     #[tokio::test]
     async fn repository_failure_returns_internal_error() {
         let repository = Arc::new(FailingHouseholdRepository);
-        let service = GetHouseholdService::new(repository);
+        let policy = Arc::new(DefaultHouseholdAccessPolicy::new(repository.clone()));
+        let service = GetHouseholdService::new(repository, policy);
 
         let result = service
             .execute(GetHouseholdCommand {
                 household_id: HouseholdId::new(),
-                user_id: UserId::new(),
+                requester_id: UserId::new(),
             })
             .await;
 

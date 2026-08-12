@@ -5,7 +5,10 @@ use chrono::Utc;
 use crate::{
     modules::{
         accounts::domain::UserId,
-        households::{domain::HouseholdId, ports::HouseholdRepository},
+        households::{
+            domain::HouseholdId,
+            ports::{HouseholdAccessError, HouseholdAccessPolicy},
+        },
         inventory::{
             domain::{
                 CategoryId, InventoryItem, InventoryItemId, InventoryItemName, InventoryPriority,
@@ -27,19 +30,19 @@ pub struct CreateInventoryItemCommand {
 }
 
 pub struct CreateInventoryItemService {
-    household_repository: Arc<dyn HouseholdRepository>,
+    household_access_policy: Arc<dyn HouseholdAccessPolicy>,
     category_repository: Arc<dyn CategoryRepository>,
     inventory_item_repository: Arc<dyn InventoryItemRepository>,
 }
 
 impl CreateInventoryItemService {
     pub fn new(
-        household_repository: Arc<dyn HouseholdRepository>,
+        household_access_policy: Arc<dyn HouseholdAccessPolicy>,
         category_repository: Arc<dyn CategoryRepository>,
         inventory_item_repository: Arc<dyn InventoryItemRepository>,
     ) -> Self {
         Self {
-            household_repository,
+            household_access_policy,
             category_repository,
             inventory_item_repository,
         }
@@ -52,32 +55,10 @@ impl CreateInventoryItemService {
         let name = InventoryItemName::parse(&command.name)
             .map_err(|_| CreateInventoryItemError::InvalidName)?;
 
-        self.household_repository
-            .find_by_id(&command.household_id)
+        self.household_access_policy
+            .require_member(&command.household_id, &command.requester_id)
             .await
-            .map_err(|error| {
-                tracing::error!(
-                    error = ?error,
-                    household_id = %command.household_id,
-                    "Failed to load household"
-                );
-                InternalError::Failed
-            })?
-            .ok_or(CreateInventoryItemError::HouseholdNotFound)?;
-
-        self.household_repository
-            .find_member(&command.household_id, &command.requester_id)
-            .await
-            .map_err(|error| {
-                tracing::error!(
-                    error = ?error,
-                    household_id = %command.household_id,
-                    requester_id = %command.requester_id,
-                    "Failed to load household membership",
-                );
-                InternalError::Failed
-            })?
-            .ok_or(CreateInventoryItemError::Forbidden)?;
+            .map_err(map_household_access_error)?;
 
         if let Some(category_id) = command.category_id {
             self.category_repository
@@ -167,6 +148,14 @@ pub enum CreateInventoryItemError {
     ItemAlreadyExists,
     #[error(transparent)]
     Internal(#[from] InternalError),
+}
+
+fn map_household_access_error(error: HouseholdAccessError) -> CreateInventoryItemError {
+    match error {
+        HouseholdAccessError::Forbidden => CreateInventoryItemError::Forbidden,
+        HouseholdAccessError::HouseholdNotFound => CreateInventoryItemError::HouseholdNotFound,
+        HouseholdAccessError::Internal(error) => CreateInventoryItemError::Internal(error),
+    }
 }
 
 #[cfg(test)]
