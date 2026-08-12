@@ -4,7 +4,7 @@ use sqlx::PgPool;
 
 use crate::{
     modules::{
-        households::adapters::PostgresHouseholdRepository,
+        households::adapters::{DefaultHouseholdAccessPolicy, PostgresHouseholdRepository},
         inventory::{
             adapters::{PostgresCategoryRepository, PostgresInventoryItemRepository},
             application::CreateInventoryItemService,
@@ -15,11 +15,12 @@ use crate::{
 
 pub(super) fn build_inventory_item_state(pool: &PgPool) -> InventoryItemState {
     let household_repository = Arc::new(PostgresHouseholdRepository::new(pool.clone()));
+    let household_access_policy = Arc::new(DefaultHouseholdAccessPolicy::new(household_repository));
     let category_repository = Arc::new(PostgresCategoryRepository::new(pool.clone()));
     let inventory_item_repository = Arc::new(PostgresInventoryItemRepository::new(pool.clone()));
 
     let create_inventory_item_service = Arc::new(CreateInventoryItemService::new(
-        household_repository,
+        household_access_policy,
         category_repository,
         inventory_item_repository,
     ));

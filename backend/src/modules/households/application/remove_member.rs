@@ -5,7 +5,10 @@ use crate::{
         accounts::domain::UserId,
         households::{
             domain::{HouseholdId, HouseholdRole},
-            ports::{HouseholdRepository, HouseholdRepositoryError},
+            ports::{
+                HouseholdAccessError, HouseholdAccessPolicy, HouseholdRepository,
+                HouseholdRepositoryError,
+            },
         },
     },
     shared::application::InternalError,
@@ -19,12 +22,17 @@ pub struct RemoveHouseholdMemberCommand {
 
 pub struct RemoveHouseholdMemberService {
     household_repository: Arc<dyn HouseholdRepository>,
+    household_access_policy: Arc<dyn HouseholdAccessPolicy>,
 }
 
 impl RemoveHouseholdMemberService {
-    pub fn new(household_repository: Arc<dyn HouseholdRepository>) -> Self {
+    pub fn new(
+        household_repository: Arc<dyn HouseholdRepository>,
+        household_access_policy: Arc<dyn HouseholdAccessPolicy>,
+    ) -> Self {
         Self {
             household_repository,
+            household_access_policy,
         }
     }
 
@@ -32,33 +40,11 @@ impl RemoveHouseholdMemberService {
         &self,
         command: RemoveHouseholdMemberCommand,
     ) -> Result<(), RemoveHouseholdMemberError> {
-        self.household_repository
-            .find_by_id(&command.household_id)
-            .await
-            .map_err(|error| {
-                tracing::error!(
-                    error = ?error,
-                    household_id = %command.household_id,
-                    "Failed to load household",
-                );
-                InternalError::Failed
-            })?
-            .ok_or(RemoveHouseholdMemberError::HouseholdNotFound)?;
-
         let requester = self
-            .household_repository
-            .find_member(&command.household_id, &command.requester_id)
+            .household_access_policy
+            .require_member(&command.household_id, &command.requester_id)
             .await
-            .map_err(|error| {
-                tracing::error!(
-                    error = ?error,
-                    household_id = %command.household_id,
-                    requester_id = %command.requester_id,
-                    "Failed to load requester membership"
-                );
-                InternalError::Failed
-            })?
-            .ok_or(RemoveHouseholdMemberError::Forbidden)?;
+            .map_err(map_household_access_error)?;
 
         if !(command.requester_id == command.member_id) && requester.role() != HouseholdRole::Owner
         {
@@ -120,6 +106,14 @@ pub enum RemoveHouseholdMemberError {
     Internal(#[from] InternalError),
 }
 
+fn map_household_access_error(error: HouseholdAccessError) -> RemoveHouseholdMemberError {
+    match error {
+        HouseholdAccessError::Forbidden => RemoveHouseholdMemberError::Forbidden,
+        HouseholdAccessError::HouseholdNotFound => RemoveHouseholdMemberError::HouseholdNotFound,
+        HouseholdAccessError::Internal(error) => RemoveHouseholdMemberError::Internal(error),
+    }
+}
+
 #[cfg(test)]
 mod tests {
 
@@ -128,7 +122,7 @@ mod tests {
     use super::*;
     use crate::{
         modules::households::{
-            adapters::InMemoryHouseholdRepository,
+            adapters::{DefaultHouseholdAccessPolicy, InMemoryHouseholdRepository},
             application::RemoveHouseholdMemberCommand,
             domain::{HouseholdKind, HouseholdMember},
             ports::HouseholdRepository,
@@ -336,8 +330,8 @@ mod tests {
     #[tokio::test]
     async fn household_repository_failure_returns_internal() {
         let repository = Arc::new(FailingHouseholdRepository);
-
-        let service = RemoveHouseholdMemberService::new(repository);
+        let policy = Arc::new(DefaultHouseholdAccessPolicy::new(repository.clone()));
+        let service = RemoveHouseholdMemberService::new(repository, policy);
 
         let result = service
             .execute(RemoveHouseholdMemberCommand {
@@ -361,7 +355,8 @@ mod tests {
             inner: inner.clone(),
         });
 
-        let service = RemoveHouseholdMemberService::new(repository);
+        let policy = Arc::new(DefaultHouseholdAccessPolicy::new(repository.clone()));
+        let service = RemoveHouseholdMemberService::new(repository, policy);
 
         let owner_id = UserId::new();
         let member_id = UserId::new();

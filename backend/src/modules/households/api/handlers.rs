@@ -88,7 +88,7 @@ pub async fn get_household(
 ) -> Result<Json<HouseholdResponse>, ApiError> {
     let command = GetHouseholdCommand {
         household_id: HouseholdId::from_uuid(household_id),
-        user_id: current_user.user_id(),
+        requester_id: current_user.user_id(),
     };
 
     let household = state
