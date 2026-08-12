@@ -1,0 +1,23 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            UPDATE inventory_items\n            SET\n                category_id = $3,\n                name = $4,\n                normalized_name = $5,\n                current_stock = $6,\n                reorder_threshold = $7,\n                priority = $8,\n                archived_at = $9,\n                updated_at = $10\n            WHERE id = $1 AND household_id = $2\n            ",
+  "describe": {
+    "columns": [],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid",
+        "Uuid",
+        "Text",
+        "Text",
+        "Int8",
+        "Int8",
+        "Text",
+        "Timestamptz",
+        "Timestamptz"
+      ]
+    },
+    "nullable": []
+  },
+  "hash": "308ccaed741d8a8183cf2c2da2abe34517cdd17d7491ff90cab01a3eecaad0df"
+}
