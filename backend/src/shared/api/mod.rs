@@ -9,6 +9,3 @@ pub use household_state::HouseholdsState;
 
 mod accounts_state;
 pub use accounts_state::AccountsState;
-
-mod inventory_state;
-pub use inventory_state::InventoryItemState;

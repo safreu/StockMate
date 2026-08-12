@@ -1,11 +1,22 @@
 use backend::modules::accounts::{
     adapters::{PostgresSessionRepository, PostgresUserRepository},
-    domain::SessionTokenHash,
-    ports::{SessionRepository, SessionRepositoryError},
+    domain::{SessionTokenHash, User},
+    ports::{SessionRepository, SessionRepositoryError, UserRepository},
 };
 use sqlx::PgPool;
 
-use crate::integration::helpers::{insert_test_user, test_session};
+use crate::integration::helpers::{test_session, test_user};
+
+async fn insert_test_user(repository: &PostgresUserRepository) -> User {
+    let user = test_user("valid@email.com");
+
+    repository
+        .insert(&user)
+        .await
+        .expect("Test user should be insertable");
+
+    user
+}
 
 #[sqlx::test]
 async fn inserted_session_can_be_found_by_token_hash(pool: PgPool) {
