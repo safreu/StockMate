@@ -673,3 +673,115 @@ curl -i \
 ```
 
 Expected status: `401 Unauthorized`.
+
+## Create an inventory item
+
+Creates an inventory item in a household. The authenticated user must be a member of the household.
+
+Replace `<household-uuid>` with the ID of the household.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Milk",
+    "current_stock": 2,
+    "reorder_threshold": 1,
+    "priority": "high"
+  }'
+```
+
+Expected status: `201 Created`.
+
+Example response:
+
+```json
+{
+  "id": "<inventory-item-uuid>"
+}
+```
+
+The `priority` field is optional. If omitted, it defaults to `default`.
+
+Valid priority values:
+
+- `default`
+- `low`
+- `medium`
+- `high`
+
+The `category_id` field is optional.
+
+### Create an inventory item with a category
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "category_id": "<category-uuid>",
+    "name": "Milk",
+    "current_stock": 2,
+    "reorder_threshold": 1,
+    "priority": "high"
+  }'
+```
+
+Expected status: `201 Created`.
+
+### Create a duplicate active inventory item
+
+After creating an item called `Milk`, try creating another active item with the same normalized name:
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "milk",
+    "current_stock": 1,
+    "reorder_threshold": 0
+  }'
+```
+
+Expected status: `409 Conflict`.
+
+### Create an inventory item with an invalid name
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "   ",
+    "current_stock": 1,
+    "reorder_threshold": 0
+  }'
+```
+
+Expected status: `400 Bad Request`.
+
+### Create an inventory item without authentication
+
+```bash
+curl -i \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Milk",
+    "current_stock": 1,
+    "reorder_threshold": 0
+  }'
+```
+
+Expected status: `401 Unauthorized`.
