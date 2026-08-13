@@ -11,3 +11,8 @@ pub use list_categories::{ListCategoriesCommand, ListCategoriesError, ListCatego
 
 mod delete_category;
 pub use delete_category::{DeleteCategoryCommand, DeleteCategoryError, DeleteCategoryService};
+
+mod list_inventory_items;
+pub use list_inventory_items::{
+    ListInventoryItemsCommand, ListInventoryItemsError, ListInventoryItemsService,
+};

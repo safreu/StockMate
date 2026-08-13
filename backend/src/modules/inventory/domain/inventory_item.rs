@@ -123,12 +123,10 @@ impl InventoryItem {
 
     pub fn shopping_quantity(&self) -> Result<u32, InventoryItemError> {
         self.ensure_active()?;
-
-        if self.current_stock <= self.reorder_threshold {
-            Ok(self.reorder_threshold - self.current_stock + 1)
-        } else {
-            Ok(0)
-        }
+        Ok(calculate_shopping_quantity(
+            self.current_stock,
+            self.reorder_threshold,
+        ))
     }
 
     pub fn increase(&mut self, amount: u32, now: DateTime<Utc>) -> Result<(), InventoryItemError> {
@@ -238,6 +236,14 @@ impl InventoryItem {
         self.updated_at = now;
 
         Ok(())
+    }
+}
+
+pub fn calculate_shopping_quantity(current_stock: u32, reorder_threshold: u32) -> u32 {
+    if current_stock <= reorder_threshold {
+        reorder_threshold - current_stock + 1
+    } else {
+        0
     }
 }
 
