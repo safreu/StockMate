@@ -9,3 +9,6 @@ pub use postgres_category_repository::PostgresCategoryRepository;
 
 mod postgres_inventory_item_repository;
 pub use postgres_inventory_item_repository::PostgresInventoryItemRepository;
+
+mod postgres_inventory_item_query;
+pub use postgres_inventory_item_query::PostgresInventoryItemQuery;

@@ -438,14 +438,15 @@ STATUS="$(
         -w "%{http_code}" \
         -b "$COOKIE_FILE" \
         -X POST \
-        "$BASE_URL/api/v1/inventory/$HOUSEHOLD_ID" \
+        "$BASE_URL/api/v1/inventory/$HOUSEHOLD_ID/items" \
+        -H "Content-Type: application/json" \
         -d "{
             \"category_id\": \"$CATEGORY_ID\",
             \"name\": \"Smoke Test Milk\",
             \"current_stock\": 2,
             \"reorder_threshold\": 1,
             \"priority\": \"high\"
-        }"      -H "Content-Type: application/json" \
+        }"
 )"
 
 assert_status "$STATUS" "201" "create inventory item"
@@ -458,6 +459,41 @@ if [[ -z "$INVENTORY_ITEM_ID" || "$INVENTORY_ITEM_ID" == "null" ]]; then
 fi
 
 echo "PASS: inventory item creation returned an id"
+
+# ---------------------------------------------------------------------------
+# List inventory items
+# ---------------------------------------------------------------------------
+
+STATUS="$(
+    curl -sS \
+        -o "$RESPONSE_FILE" \
+        -w "%{http_code}" \
+        -b "$COOKIE_FILE" \
+        "$BASE_URL/api/v1/inventory/$HOUSEHOLD_ID/items"
+)"
+
+assert_status "$STATUS" "200" "list inventory items"
+
+if ! jq -e \
+    --arg item_id "$INVENTORY_ITEM_ID" \
+    --arg category_id "$CATEGORY_ID" \
+    '.[] |
+        select(
+            .id == $item_id
+            and .name == "Smoke Test Milk"
+            and .category.id == $category_id
+            and .category.name == "Smoke Test Food"
+            and .current_stock == 2
+            and .reorder_threshold == 1
+            and .priority == "high"
+            and .shopping_quantity == 0
+        )' \
+    "$RESPONSE_FILE" >/dev/null; then
+    echo "FAIL: created inventory item was not returned correctly by inventory list"
+    exit 1
+fi
+
+echo "PASS: created inventory item appears correctly in inventory list"
 
 # ---------------------------------------------------------------------------
 # Delete category
@@ -496,6 +532,30 @@ if jq -e --arg id "$CATEGORY_ID" \
 fi
 
 echo "PASS: deleted category no longer appears in category list"
+
+# ---------------------------------------------------------------------------
+# Verify deleting category did not delete inventory item
+# ---------------------------------------------------------------------------
+
+STATUS="$(
+    curl -sS \
+        -o "$RESPONSE_FILE" \
+        -w "%{http_code}" \
+        -b "$COOKIE_FILE" \
+        "$BASE_URL/api/v1/inventory/$HOUSEHOLD_ID/items"
+)"
+
+assert_status "$STATUS" "200" "list inventory items after category deletion"
+
+if ! jq -e \
+    --arg id "$INVENTORY_ITEM_ID" \
+    '.[] | select(.id == $id and .category == null)' \
+    "$RESPONSE_FILE" >/dev/null; then
+    echo "FAIL: inventory item was not preserved without category after category deletion"
+    exit 1
+fi
+
+echo "PASS: inventory item remains with no category after category deletion"
 
 echo
 echo "================================="

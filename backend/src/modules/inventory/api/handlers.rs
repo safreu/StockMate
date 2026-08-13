@@ -12,11 +12,11 @@ use crate::{
         inventory::{
             api::dto::{
                 CreateCategoryRequest, CreateCategoryResponse, CreateInventoryItemRequest,
-                CreateInventoryItemResponse, ListCategoriesResponse,
+                CreateInventoryItemResponse, InventoryItemResponse, ListCategoriesResponse,
             },
             application::{
                 CreateCategoryCommand, CreateInventoryItemCommand, DeleteCategoryCommand,
-                ListCategoriesCommand,
+                ListCategoriesCommand, ListInventoryItemsCommand,
             },
             domain::{CategoryId, InventoryPriority},
         },
@@ -141,4 +141,26 @@ pub async fn delete_category(
         .map_err(ApiError::from)?;
 
     Ok(StatusCode::NO_CONTENT)
+}
+
+pub async fn list_inventory_items(
+    State(state): State<AppState>,
+    current_user: CurrentUser,
+    Path(household_id): Path<Uuid>,
+) -> Result<Json<Vec<InventoryItemResponse>>, ApiError> {
+    let command = ListInventoryItemsCommand {
+        requester_id: current_user.user_id(),
+        household_id: HouseholdId::from_uuid(household_id),
+    };
+
+    let items = state
+        .inventory
+        .list_inventory_items
+        .execute(command)
+        .await
+        .map_err(ApiError::from)?;
+
+    Ok(Json(
+        items.into_iter().map(InventoryItemResponse::from).collect(),
+    ))
 }

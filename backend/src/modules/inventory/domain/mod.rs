@@ -17,4 +17,5 @@ mod category;
 pub use category::Category;
 
 mod inventory_item;
-pub use inventory_item::InventoryItem;
+pub use inventory_item::calculate_shopping_quantity;
+pub use inventory_item::{InventoryItem, InventoryItemError};
