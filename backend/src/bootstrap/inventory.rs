@@ -8,7 +8,8 @@ use crate::{
         inventory::{
             adapters::{PostgresCategoryRepository, PostgresInventoryItemRepository},
             application::{
-                CreateCategoryService, CreateInventoryItemService, ListCategoriesService,
+                CreateCategoryService, CreateInventoryItemService, DeleteCategoryService,
+                ListCategoriesService,
             },
         },
     },
@@ -33,6 +34,11 @@ pub(super) fn build_inventory_item_state(pool: &PgPool) -> InventoryItemState {
     ));
 
     let list_categories_service = Arc::new(ListCategoriesService::new(
+        household_access_policy.clone(),
+        category_repository.clone(),
+    ));
+
+    let delete_category_service = Arc::new(DeleteCategoryService::new(
         household_access_policy,
         category_repository,
     ));
@@ -41,5 +47,6 @@ pub(super) fn build_inventory_item_state(pool: &PgPool) -> InventoryItemState {
         create_inventory_item: create_inventory_item_service,
         create_category: create_category_service,
         list_categories: list_categories_service,
+        delete_category: delete_category_service,
     }
 }

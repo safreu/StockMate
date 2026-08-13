@@ -82,7 +82,7 @@ mod tests {
     use crate::{
         modules::households::domain::HouseholdKind,
         test_helpers::{
-            CategoryTestBuilder, build_list_categories_serivce, insert_owned_household,
+            CategoryTestBuilder, build_list_categories_service, insert_owned_household,
         },
     };
 
@@ -90,7 +90,7 @@ mod tests {
 
     #[tokio::test]
     async fn household_member_can_list_categories() {
-        let (service, category_repository, household_repository) = build_list_categories_serivce();
+        let (service, category_repository, household_repository) = build_list_categories_service();
 
         let owner_id = UserId::new();
 
@@ -130,7 +130,7 @@ mod tests {
 
     #[tokio::test]
     async fn only_categories_for_requested_household_are_returned() {
-        let (service, category_repository, household_repository) = build_list_categories_serivce();
+        let (service, category_repository, household_repository) = build_list_categories_service();
 
         let owner_id = UserId::new();
 
@@ -180,7 +180,7 @@ mod tests {
 
     #[tokio::test]
     async fn non_member_is_forbidden() {
-        let (service, category_repository, household_repository) = build_list_categories_serivce();
+        let (service, category_repository, household_repository) = build_list_categories_service();
 
         let owner_id = UserId::new();
 

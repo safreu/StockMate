@@ -999,3 +999,54 @@ curl -i \
 ```
 
 Expected status: `401 Unauthorized`.
+
+## Delete a category
+
+Deletes a category from a household. The authenticated user must be a member of the household.
+
+Deleting a category does not delete inventory items assigned to it. Their `category_id` is set to `null`.
+
+Replace `<household-uuid>` and `<category-uuid>` with the corresponding IDs.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X DELETE \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/categories/<category-uuid>"
+```
+
+Expected status: `204 No Content`.
+
+## Delete an unknown category
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X DELETE \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/categories/00000000-0000-0000-0000-000000000000"
+```
+
+Expected status: `404 Not Found`.
+
+## Delete a category without membership
+
+Use a category belonging to a household the authenticated user does not belong to.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X DELETE \
+  "$BASE_URL/api/v1/inventory/<other-household-uuid>/categories/<category-uuid>"
+```
+
+Expected status: `403 Forbidden`.
+
+## Delete a category without authentication
+
+```bash
+curl -i \
+  -X DELETE \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/categories/<category-uuid>"
+```
+
+Expected status: `401 Unauthorized`.
