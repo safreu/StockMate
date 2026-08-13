@@ -406,6 +406,29 @@ fi
 echo "PASS: category creation returned an id"
 
 # ---------------------------------------------------------------------------
+# List categories
+# ---------------------------------------------------------------------------
+
+STATUS="$(
+    curl -sS \
+        -o "$RESPONSE_FILE" \
+        -w "%{http_code}" \
+        -b "$COOKIE_FILE" \
+        "$BASE_URL/api/v1/inventory/$HOUSEHOLD_ID/categories"
+)"
+
+assert_status "$STATUS" "200" "list categories"
+
+if ! jq -e --arg id "$CATEGORY_ID" \
+    '.[] | select(.id == $id and .name == "Smoke Test Food")' \
+    "$RESPONSE_FILE" >/dev/null; then
+    echo "FAIL: created category was not returned by category list"
+    exit 1
+fi
+
+echo "PASS: created category appears in category list"
+
+# ---------------------------------------------------------------------------
 # Create inventory item
 # ---------------------------------------------------------------------------
 
