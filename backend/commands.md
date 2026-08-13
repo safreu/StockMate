@@ -785,3 +785,151 @@ curl -i \
 ```
 
 Expected status: `401 Unauthorized`.
+
+## Create a category
+
+Creates a category for a household. The authenticated user must be a member of the household.
+
+Replace `<household-uuid>` with the ID of the household.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/categories" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Food"
+  }'
+```
+
+Expected status: `201 Created`.
+
+Example response:
+
+```json
+{
+  "id": "<category-uuid>"
+}
+```
+
+Category names are unique within a household after normalization.
+
+## Create a duplicate category
+
+After creating a category called `Food`, try creating another category with the same normalized name:
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/categories" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "food"
+  }'
+```
+
+Expected status: `409 Conflict`.
+
+## Create a category with an invalid name
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/categories" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "   "
+  }'
+```
+
+Expected status: `400 Bad Request`.
+
+## Create a category without authentication
+
+```bash
+curl -i \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/categories" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Food"
+  }'
+```
+
+Expected status: `401 Unauthorized`.## Create a category
+
+Creates a category for a household. The authenticated user must be a member of the household.
+
+Replace `<household-uuid>` with the ID of the household.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/categories" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Food"
+  }'
+```
+
+Expected status: `201 Created`.
+
+Example response:
+
+```json
+{
+  "id": "<category-uuid>"
+}
+```
+
+Category names are unique within a household after normalization.
+
+## Create a duplicate category
+
+After creating a category called `Food`, try creating another category with the same normalized name:
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/categories" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "food"
+  }'
+```
+
+Expected status: `409 Conflict`.
+
+## Create a category with an invalid name
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/categories" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "   "
+  }'
+```
+
+Expected status: `400 Bad Request`.
+
+## Create a category without authentication
+
+```bash
+curl -i \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/categories" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Food"
+  }'
+```
+
+Expected status: `401 Unauthorized`.

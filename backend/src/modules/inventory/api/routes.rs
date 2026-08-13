@@ -1,7 +1,12 @@
 use axum::{Router, routing::post};
 
-use crate::{modules::inventory::api::handlers::create_inventory_item, shared::api::AppState};
+use crate::{
+    modules::inventory::api::handlers::{create_category, create_inventory_item},
+    shared::api::AppState,
+};
 
 pub fn inventory_routes() -> Router<AppState> {
-    Router::new().route("/{household_id}", post(create_inventory_item))
+    Router::new()
+        .route("/{household_id}", post(create_inventory_item))
+        .route("/{household_id}/categories", post(create_category))
 }
