@@ -12,7 +12,7 @@ use crate::{
             },
             application::{
                 CreateCategoryService, CreateInventoryItemService, DeleteCategoryService,
-                ListCategoriesService, ListInventoryItemsService,
+                GetInventoryItemService, ListCategoriesService, ListInventoryItemsService,
             },
         },
     },
@@ -48,6 +48,11 @@ pub(super) fn build_inventory_item_state(pool: &PgPool) -> InventoryItemState {
     ));
 
     let list_inventory_items_service = Arc::new(ListInventoryItemsService::new(
+        household_access_policy.clone(),
+        inventory_item_query.clone(),
+    ));
+
+    let get_inventory_item_service = Arc::new(GetInventoryItemService::new(
         household_access_policy,
         inventory_item_query,
     ));
@@ -58,5 +63,6 @@ pub(super) fn build_inventory_item_state(pool: &PgPool) -> InventoryItemState {
         list_categories: list_categories_service,
         delete_category: delete_category_service,
         list_inventory_items: list_inventory_items_service,
+        get_inventory_item: get_inventory_item_service,
     }
 }

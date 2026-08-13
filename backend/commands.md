@@ -1128,3 +1128,75 @@ curl -i \
 ```
 
 Expected status: `401 Unauthorized`.
+
+## Get an inventory item
+
+Returns one active inventory item from a household. The authenticated user must be a member of the household.
+
+Replace `<household-uuid>` and `<inventory-item-uuid>` with the corresponding IDs.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>"
+```
+
+Expected status: `200 OK`.
+
+Example response:
+
+```json
+{
+  "id": "<inventory-item-uuid>",
+  "name": "Milk",
+  "category": {
+    "id": "<category-uuid>",
+    "name": "Food"
+  },
+  "current_stock": 2,
+  "reorder_threshold": 1,
+  "priority": "high",
+  "shopping_quantity": 0
+}
+```
+
+An inventory item without a category contains:
+
+```json
+{
+  "category": null
+}
+```
+
+Archived inventory items are not returned by this endpoint.
+
+## Get an unknown inventory item
+
+```bash
+curl -i \
+  -b cookies.txt \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/00000000-0000-0000-0000-000000000000"
+```
+
+Expected status: `404 Not Found`.
+
+## Get an inventory item without membership
+
+Use an inventory item belonging to a household the authenticated user does not belong to.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  "$BASE_URL/api/v1/inventory/<other-household-uuid>/items/<inventory-item-uuid>"
+```
+
+Expected status: `403 Forbidden`.
+
+## Get an inventory item without authentication
+
+```bash
+curl -i \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>"
+```
+
+Expected status: `401 Unauthorized`.

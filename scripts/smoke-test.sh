@@ -496,6 +496,43 @@ fi
 echo "PASS: created inventory item appears correctly in inventory list"
 
 # ---------------------------------------------------------------------------
+# Get inventory item
+# ---------------------------------------------------------------------------
+
+STATUS="$(
+    curl -sS \
+        -o "$RESPONSE_FILE" \
+        -w "%{http_code}" \
+        -b "$COOKIE_FILE" \
+        "$BASE_URL/api/v1/inventory/$HOUSEHOLD_ID/items/$INVENTORY_ITEM_ID"
+)"
+
+assert_status "$STATUS" "200" "get inventory item"
+
+RETURNED_ITEM_ID="$(jq -r '.id' "$RESPONSE_FILE")"
+RETURNED_ITEM_NAME="$(jq -r '.name' "$RESPONSE_FILE")"
+RETURNED_CATEGORY_ID="$(jq -r '.category.id' "$RESPONSE_FILE")"
+
+if [[ "$RETURNED_ITEM_ID" != "$INVENTORY_ITEM_ID" ]]; then
+    echo "FAIL: get inventory item returned unexpected item"
+    exit 1
+fi
+
+if [[ "$RETURNED_ITEM_NAME" != "Smoke Test Milk" ]]; then
+    echo "FAIL: get inventory item returned unexpected name"
+    echo "  expected: Smoke Test Milk"
+    echo "  actual:   $RETURNED_ITEM_NAME"
+    exit 1
+fi
+
+if [[ "$RETURNED_CATEGORY_ID" != "$CATEGORY_ID" ]]; then
+    echo "FAIL: get inventory item returned unexpected category"
+    exit 1
+fi
+
+echo "PASS: get inventory item returned correct item"
+
+# ---------------------------------------------------------------------------
 # Delete category
 # ---------------------------------------------------------------------------
 

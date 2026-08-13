@@ -16,9 +16,9 @@ use crate::{
             },
             application::{
                 CreateCategoryCommand, CreateInventoryItemCommand, DeleteCategoryCommand,
-                ListCategoriesCommand, ListInventoryItemsCommand,
+                GetInventoryItemCommand, ListCategoriesCommand, ListInventoryItemsCommand,
             },
-            domain::{CategoryId, InventoryPriority},
+            domain::{CategoryId, InventoryItemId, InventoryPriority},
         },
     },
     shared::api::{ApiError, AppState},
@@ -163,4 +163,25 @@ pub async fn list_inventory_items(
     Ok(Json(
         items.into_iter().map(InventoryItemResponse::from).collect(),
     ))
+}
+
+pub async fn get_inventory_item(
+    State(state): State<AppState>,
+    current_user: CurrentUser,
+    Path((household_id, item_id)): Path<(Uuid, Uuid)>,
+) -> Result<Json<InventoryItemResponse>, ApiError> {
+    let command = GetInventoryItemCommand {
+        requester_id: current_user.user_id(),
+        household_id: HouseholdId::from_uuid(household_id),
+        item_id: InventoryItemId::from_uuid(item_id),
+    };
+
+    let item = state
+        .inventory
+        .get_inventory_item
+        .execute(command)
+        .await
+        .map_err(ApiError::from)?;
+
+    Ok(Json(InventoryItemResponse::from(item)))
 }
