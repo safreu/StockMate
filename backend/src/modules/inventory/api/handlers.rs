@@ -15,7 +15,8 @@ use crate::{
                 CreateInventoryItemResponse, ListCategoriesResponse,
             },
             application::{
-                CreateCategoryCommand, CreateInventoryItemCommand, ListCategoriesCommand,
+                CreateCategoryCommand, CreateInventoryItemCommand, DeleteCategoryCommand,
+                ListCategoriesCommand,
             },
             domain::{CategoryId, InventoryPriority},
         },
@@ -119,4 +120,25 @@ pub async fn list_categories(
         .collect();
 
     Ok(Json(response))
+}
+
+pub async fn delete_category(
+    State(state): State<AppState>,
+    current_user: CurrentUser,
+    Path((household_id, category_id)): Path<(Uuid, Uuid)>,
+) -> Result<StatusCode, ApiError> {
+    let command = DeleteCategoryCommand {
+        requester_id: current_user.user_id(),
+        household_id: HouseholdId::from_uuid(household_id),
+        category_id: CategoryId::from_uuid(category_id),
+    };
+
+    state
+        .inventory
+        .delete_category
+        .execute(command)
+        .await
+        .map_err(ApiError::from)?;
+
+    Ok(StatusCode::NO_CONTENT)
 }

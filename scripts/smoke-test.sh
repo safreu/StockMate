@@ -459,6 +459,44 @@ fi
 
 echo "PASS: inventory item creation returned an id"
 
+# ---------------------------------------------------------------------------
+# Delete category
+# ---------------------------------------------------------------------------
+
+STATUS="$(
+    curl -sS \
+        -o "$RESPONSE_FILE" \
+        -w "%{http_code}" \
+        -b "$COOKIE_FILE" \
+        -X DELETE \
+        "$BASE_URL/api/v1/inventory/$HOUSEHOLD_ID/categories/$CATEGORY_ID"
+)"
+
+assert_status "$STATUS" "204" "delete category"
+
+# ---------------------------------------------------------------------------
+# Verify deleted category no longer appears in category list
+# ---------------------------------------------------------------------------
+
+STATUS="$(
+    curl -sS \
+        -o "$RESPONSE_FILE" \
+        -w "%{http_code}" \
+        -b "$COOKIE_FILE" \
+        "$BASE_URL/api/v1/inventory/$HOUSEHOLD_ID/categories"
+)"
+
+assert_status "$STATUS" "200" "list categories after deletion"
+
+if jq -e --arg id "$CATEGORY_ID" \
+    '.[] | select(.id == $id)' \
+    "$RESPONSE_FILE" >/dev/null; then
+    echo "FAIL: deleted category still appears in category list"
+    exit 1
+fi
+
+echo "PASS: deleted category no longer appears in category list"
+
 echo
 echo "================================="
 echo "All StockMate smoke tests passed."
