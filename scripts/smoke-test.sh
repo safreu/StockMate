@@ -43,7 +43,7 @@ assert_status() {
 }
 
 echo
-echo "Running StockMate API smoke tests"
+echo "Running aims API smoke tests"
 echo "Base URL: $BASE_URL"
 echo
 
@@ -533,6 +533,74 @@ fi
 echo "PASS: get inventory item returned correct item"
 
 # ---------------------------------------------------------------------------
+# Update inventory item
+# ---------------------------------------------------------------------------
+
+STATUS="$(
+    curl -sS \
+        -o "$RESPONSE_FILE" \
+        -w "%{http_code}" \
+        -b "$COOKIE_FILE" \
+        -X PATCH \
+        "$BASE_URL/api/v1/inventory/$HOUSEHOLD_ID/items/$INVENTORY_ITEM_ID" \
+        -H "Content-Type: application/json" \
+        -d '{
+            "name": "Smoke Test Oat Milk",
+            "reorder_threshold": 3,
+            "priority": "medium"
+        }'
+)"
+
+assert_status "$STATUS" "204" "update inventory item"
+
+# ---------------------------------------------------------------------------
+# Verify inventory item update was persisted
+# ---------------------------------------------------------------------------
+
+STATUS="$(
+    curl -sS \
+        -o "$RESPONSE_FILE" \
+        -w "%{http_code}" \
+        -b "$COOKIE_FILE" \
+        "$BASE_URL/api/v1/inventory/$HOUSEHOLD_ID/items/$INVENTORY_ITEM_ID"
+)"
+
+assert_status "$STATUS" "200" "get updated inventory item"
+
+UPDATED_NAME="$(jq -r '.name' "$RESPONSE_FILE")"
+UPDATED_REORDER_THRESHOLD="$(jq -r '.reorder_threshold' "$RESPONSE_FILE")"
+UPDATED_PRIORITY="$(jq -r '.priority' "$RESPONSE_FILE")"
+UPDATED_CATEGORY_ID="$(jq -r '.category.id' "$RESPONSE_FILE")"
+
+if [[ "$UPDATED_NAME" != "Smoke Test Oat Milk" ]]; then
+    echo "FAIL: inventory item name update was not persisted"
+    echo "  expected: Smoke Test Oat Milk"
+    echo "  actual:   $UPDATED_NAME"
+    exit 1
+fi
+
+if [[ "$UPDATED_REORDER_THRESHOLD" != "3" ]]; then
+    echo "FAIL: inventory item reorder threshold update was not persisted"
+    echo "  expected: 3"
+    echo "  actual:   $UPDATED_REORDER_THRESHOLD"
+    exit 1
+fi
+
+if [[ "$UPDATED_PRIORITY" != "medium" ]]; then
+    echo "FAIL: inventory item priority update was not persisted"
+    echo "  expected: medium"
+    echo "  actual:   $UPDATED_PRIORITY"
+    exit 1
+fi
+
+if [[ "$UPDATED_CATEGORY_ID" != "$CATEGORY_ID" ]]; then
+    echo "FAIL: omitted category was unexpectedly changed"
+    exit 1
+fi
+
+echo "PASS: inventory item update was persisted"
+
+# ---------------------------------------------------------------------------
 # Delete category
 # ---------------------------------------------------------------------------
 
@@ -596,6 +664,6 @@ echo "PASS: inventory item remains with no category after category deletion"
 
 echo
 echo "================================="
-echo "All StockMate smoke tests passed."
+echo "All aims smoke tests passed."
 echo "================================="
 echo

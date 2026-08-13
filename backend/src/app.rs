@@ -31,7 +31,7 @@ impl Application {
     pub async fn run(self) -> Result<(), std::io::Error> {
         let address = self.listener.local_addr()?;
 
-        tracing::info!(%address, "StockMate backend started");
+        tracing::info!(%address, "aims backend started");
 
         axum::serve(self.listener, self.router)
             .with_graceful_shutdown(shutdown_signal())

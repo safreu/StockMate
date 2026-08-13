@@ -2,18 +2,18 @@ services:
   postgres:
     image: postgres:17
     environment:
-      POSTGRES_DB: stockmate
-      POSTGRES_USER: stockmate
+      POSTGRES_DB: aims
+      POSTGRES_USER: aims
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD}
     ports:
       - "127.0.0.1:5432:5432"
     volumes:
-      - stockmate_postgres_data:/var/lib/postgresql/data
+      - aims_postgres_data:/var/lib/postgresql/data
     healthcheck:
       test:
         [
           "CMD-SHELL",
-          "pg_isready --username=stockmate --dbname=stockmate",
+          "pg_isready --username=aims --dbname=aims",
         ]
       interval: 5s
       timeout: 5s
@@ -28,4 +28,4 @@ services:
         condition: service_healthy
 
 volumes:
-  stockmate_postgres_data:
+  aims_postgres_data:

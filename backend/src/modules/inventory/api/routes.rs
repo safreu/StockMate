@@ -6,7 +6,7 @@ use axum::{
 use crate::{
     modules::inventory::api::handlers::{
         create_category, create_inventory_item, delete_category, get_inventory_item,
-        list_categories, list_inventory_items,
+        list_categories, list_inventory_items, update_inventory_item,
     },
     shared::api::AppState,
 };
@@ -17,7 +17,10 @@ pub fn inventory_routes() -> Router<AppState> {
             "/{household_id}/items",
             post(create_inventory_item).get(list_inventory_items),
         )
-        .route("/{household_id}/items/{item_id}", get(get_inventory_item))
+        .route(
+            "/{household_id}/items/{item_id}",
+            get(get_inventory_item).patch(update_inventory_item),
+        )
         .route(
             "/{household_id}/categories",
             post(create_category).get(list_categories),

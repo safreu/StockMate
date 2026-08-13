@@ -14,6 +14,7 @@ pub use services::{
     build_list_categories_service, build_list_household_members_service,
     build_list_households_service, build_login_service, build_register_service,
     build_remove_household_member_service, build_rename_household_service,
+    build_update_inventory_item_service,
 };
 
 mod mocks;

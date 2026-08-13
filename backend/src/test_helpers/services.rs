@@ -26,7 +26,7 @@ use crate::{
             adapters::{InMemoryCategoryRepository, InMemoryInventoryItemRepository},
             application::{
                 CreateCategoryService, CreateInventoryItemService, DeleteCategoryService,
-                ListCategoriesService,
+                ListCategoriesService, UpdateInventoryItemService,
             },
         },
     },
@@ -256,4 +256,31 @@ pub fn build_delete_category_service() -> (
     let service = DeleteCategoryService::new(household_access_policy, category_repository.clone());
 
     (service, category_repository, household_repository)
+}
+
+pub fn build_update_inventory_item_service() -> (
+    UpdateInventoryItemService,
+    Arc<InMemoryCategoryRepository>,
+    Arc<InMemoryInventoryItemRepository>,
+    Arc<InMemoryHouseholdRepository>,
+) {
+    let household_repository = Arc::new(InMemoryHouseholdRepository::new());
+    let household_access_policy = Arc::new(DefaultHouseholdAccessPolicy::new(
+        household_repository.clone(),
+    ));
+    let category_repository = Arc::new(InMemoryCategoryRepository::new());
+    let inventory_item_repository = Arc::new(InMemoryInventoryItemRepository::new());
+
+    let service = UpdateInventoryItemService::new(
+        household_access_policy,
+        category_repository.clone(),
+        inventory_item_repository.clone(),
+    );
+
+    (
+        service,
+        category_repository,
+        inventory_item_repository,
+        household_repository,
+    )
 }

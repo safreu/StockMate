@@ -72,3 +72,11 @@ impl From<CategorySummary> for InventoryItemCategoryResponse {
         }
     }
 }
+
+#[derive(Debug, Deserialize)]
+pub struct UpdateInventoryItemRequest {
+    pub name: Option<String>,
+    pub category_id: Option<Option<Uuid>>,
+    pub reorder_threshold: Option<u32>,
+    pub priority: Option<String>,
+}
