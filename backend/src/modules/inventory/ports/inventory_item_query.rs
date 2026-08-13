@@ -1,7 +1,10 @@
 use async_trait::async_trait;
 
 use crate::{
-    modules::{households::domain::HouseholdId, inventory::read_models::InventoryItemListEntry},
+    modules::{
+        households::domain::HouseholdId,
+        inventory::{domain::InventoryItemId, read_models::InventoryItemListEntry},
+    },
     shared::db::PersistenceError,
 };
 
@@ -11,6 +14,12 @@ pub trait InventoryItemQuery: Send + Sync {
         &self,
         household_id: &HouseholdId,
     ) -> Result<Vec<InventoryItemListEntry>, InventoryItemQueryError>;
+
+    async fn find_active_by_id(
+        &self,
+        household_id: &HouseholdId,
+        item_id: &InventoryItemId,
+    ) -> Result<Option<InventoryItemListEntry>, InventoryItemQueryError>;
 }
 
 #[derive(Debug, PartialEq, Eq, thiserror::Error)]

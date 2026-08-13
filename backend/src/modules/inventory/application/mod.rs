@@ -16,3 +16,8 @@ mod list_inventory_items;
 pub use list_inventory_items::{
     ListInventoryItemsCommand, ListInventoryItemsError, ListInventoryItemsService,
 };
+
+mod get_inventory_item;
+pub use get_inventory_item::{
+    GetInventoryItemCommand, GetInventoryItemError, GetInventoryItemService,
+};

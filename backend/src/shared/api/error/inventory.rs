@@ -1,7 +1,7 @@
 use crate::{
     modules::inventory::application::{
-        CreateCategoryError, CreateInventoryItemError, DeleteCategoryError, ListCategoriesError,
-        ListInventoryItemsError,
+        CreateCategoryError, CreateInventoryItemError, DeleteCategoryError, GetInventoryItemError,
+        ListCategoriesError, ListInventoryItemsError,
     },
     shared::api::ApiError,
 };
@@ -98,6 +98,25 @@ impl From<ListInventoryItemsError> for ApiError {
                 ApiError::not_found("household_not_found", "The household was not found")
             }
             ListInventoryItemsError::Internal(_) => ApiError::internal_error(),
+        }
+    }
+}
+
+impl From<GetInventoryItemError> for ApiError {
+    fn from(error: GetInventoryItemError) -> Self {
+        match error {
+            GetInventoryItemError::Forbidden => ApiError::forbidden(
+                "household_access_forbidden",
+                "You do not have permissions to modify this household",
+            ),
+            GetInventoryItemError::HouseholdNotFound => {
+                ApiError::not_found("household_not_found", "The household was not found")
+            }
+            GetInventoryItemError::ItemNotFound => ApiError::not_found(
+                "inventory_item_not_found",
+                "The inventory item was not found",
+            ),
+            GetInventoryItemError::Internal(_) => ApiError::internal_error(),
         }
     }
 }

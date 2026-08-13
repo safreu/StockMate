@@ -7,22 +7,25 @@ use crate::{
             domain::HouseholdId,
             ports::{HouseholdAccessError, HouseholdAccessPolicy},
         },
-        inventory::{ports::InventoryItemQuery, read_models::InventoryItemListEntry},
+        inventory::{
+            domain::InventoryItemId, ports::InventoryItemQuery, read_models::InventoryItemListEntry,
+        },
     },
     shared::application::InternalError,
 };
 
-pub struct ListInventoryItemsCommand {
+pub struct GetInventoryItemCommand {
     pub requester_id: UserId,
     pub household_id: HouseholdId,
+    pub item_id: InventoryItemId,
 }
 
-pub struct ListInventoryItemsService {
+pub struct GetInventoryItemService {
     household_access_policy: Arc<dyn HouseholdAccessPolicy>,
     inventory_item_query: Arc<dyn InventoryItemQuery>,
 }
 
-impl ListInventoryItemsService {
+impl GetInventoryItemService {
     pub fn new(
         household_access_policy: Arc<dyn HouseholdAccessPolicy>,
         inventory_item_query: Arc<dyn InventoryItemQuery>,
@@ -35,42 +38,46 @@ impl ListInventoryItemsService {
 
     pub async fn execute(
         &self,
-        command: ListInventoryItemsCommand,
-    ) -> Result<Vec<InventoryItemListEntry>, ListInventoryItemsError> {
+        command: GetInventoryItemCommand,
+    ) -> Result<InventoryItemListEntry, GetInventoryItemError> {
         self.household_access_policy
             .require_member(&command.household_id, &command.requester_id)
             .await
             .map_err(map_household_access_error)?;
 
         self.inventory_item_query
-            .find_active_for_household(&command.household_id)
+            .find_active_by_id(&command.household_id, &command.item_id)
             .await
             .map_err(|error| {
                 tracing::error!(
                     error = ?error,
                     household_id = %command.household_id,
-                    "Failed to list active inventory items",
+                    item_id = %command.item_id,
+                    "Failed to load inventory item"
                 );
-                ListInventoryItemsError::Internal(InternalError::Failed)
-            })
+                GetInventoryItemError::Internal(InternalError::Failed)
+            })?
+            .ok_or(GetInventoryItemError::ItemNotFound)
     }
 }
 
-#[derive(Debug, PartialEq, thiserror::Error)]
-pub enum ListInventoryItemsError {
+#[derive(Debug, PartialEq, Eq, thiserror::Error)]
+pub enum GetInventoryItemError {
     #[error("Household was not found")]
     HouseholdNotFound,
+    #[error("Inventory item was not found")]
+    ItemNotFound,
     #[error("You do not have permission")]
     Forbidden,
     #[error(transparent)]
     Internal(#[from] InternalError),
 }
 
-fn map_household_access_error(error: HouseholdAccessError) -> ListInventoryItemsError {
+fn map_household_access_error(error: HouseholdAccessError) -> GetInventoryItemError {
     match error {
-        HouseholdAccessError::Forbidden => ListInventoryItemsError::Forbidden,
-        HouseholdAccessError::HouseholdNotFound => ListInventoryItemsError::HouseholdNotFound,
-        HouseholdAccessError::Internal(error) => ListInventoryItemsError::Internal(error),
+        HouseholdAccessError::Forbidden => GetInventoryItemError::Forbidden,
+        HouseholdAccessError::HouseholdNotFound => GetInventoryItemError::HouseholdNotFound,
+        HouseholdAccessError::Internal(error) => GetInventoryItemError::Internal(error),
     }
 }
 
@@ -81,12 +88,12 @@ mod tests {
     use super::*;
 
     #[tokio::test]
-    async fn household_member_can_list_active_inventory_items() {}
+    async fn household_member_can_get_inventory_item() {}
+
+    #[tokio::test]
+    async fn unknown_inventory_item_returns_not_found() {}
 
     #[tokio::test]
     async fn non_member_is_forbidden() {}
-
-    #[tokio::test]
-    async fn query_failure_returns_internal() {}
 }
-*/
+ */
