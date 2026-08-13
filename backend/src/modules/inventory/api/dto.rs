@@ -24,3 +24,9 @@ pub struct CreateCategoryRequest {
 pub struct CreateCategoryResponse {
     pub id: Uuid,
 }
+
+#[derive(Debug, Serialize)]
+pub struct ListCategoriesResponse {
+    pub id: Uuid,
+    pub name: String,
+}

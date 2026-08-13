@@ -933,3 +933,69 @@ curl -i \
 ```
 
 Expected status: `401 Unauthorized`.
+
+## List categories
+
+Returns all categories for a household. The authenticated user must be a member of the household.
+
+Replace `<household-uuid>` with the ID of the household.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/categories"
+```
+
+Expected status: `200 OK`.
+
+Example response:
+
+```json
+[
+  {
+    "id": "<category-uuid>",
+    "name": "Food"
+  },
+  {
+    "id": "<category-uuid>",
+    "name": "Cleaning"
+  }
+]
+```
+
+If the household has no categories, the endpoint returns an empty list:
+
+```json
+[]
+```
+
+## List categories of an unknown household
+
+```bash
+curl -i \
+  -b cookies.txt \
+  "$BASE_URL/api/v1/inventory/00000000-0000-0000-0000-000000000000/categories"
+```
+
+Expected status: `404 Not Found`.
+
+## List categories without membership
+
+Use the ID of a household the authenticated user does not belong to.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  "$BASE_URL/api/v1/inventory/<other-household-uuid>/categories"
+```
+
+Expected status: `403 Forbidden`.
+
+## List categories without authentication
+
+```bash
+curl -i \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/categories"
+```
+
+Expected status: `401 Unauthorized`.

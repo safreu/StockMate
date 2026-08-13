@@ -12,9 +12,11 @@ use crate::{
         inventory::{
             api::dto::{
                 CreateCategoryRequest, CreateCategoryResponse, CreateInventoryItemRequest,
-                CreateInventoryItemResponse,
+                CreateInventoryItemResponse, ListCategoriesResponse,
             },
-            application::{CreateCategoryCommand, CreateInventoryItemCommand},
+            application::{
+                CreateCategoryCommand, CreateInventoryItemCommand, ListCategoriesCommand,
+            },
             domain::{CategoryId, InventoryPriority},
         },
     },
@@ -89,4 +91,32 @@ pub async fn create_category(
             id: category_id.into_uuid(),
         }),
     ))
+}
+
+pub async fn list_categories(
+    State(state): State<AppState>,
+    current_user: CurrentUser,
+    Path(household_id): Path<Uuid>,
+) -> Result<Json<Vec<ListCategoriesResponse>>, ApiError> {
+    let command = ListCategoriesCommand {
+        requester_id: current_user.user_id(),
+        household_id: HouseholdId::from_uuid(household_id),
+    };
+
+    let categories = state
+        .inventory
+        .list_categories
+        .execute(command)
+        .await
+        .map_err(ApiError::from)?;
+
+    let response = categories
+        .into_iter()
+        .map(|category| ListCategoriesResponse {
+            id: category.id().into_uuid(),
+            name: category.name().as_str().to_string(),
+        })
+        .collect();
+
+    Ok(Json(response))
 }

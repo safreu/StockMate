@@ -7,7 +7,9 @@ use crate::{
         households::adapters::{DefaultHouseholdAccessPolicy, PostgresHouseholdRepository},
         inventory::{
             adapters::{PostgresCategoryRepository, PostgresInventoryItemRepository},
-            application::{CreateCategoryService, CreateInventoryItemService},
+            application::{
+                CreateCategoryService, CreateInventoryItemService, ListCategoriesService,
+            },
         },
     },
     shared::api::InventoryItemState,
@@ -26,6 +28,11 @@ pub(super) fn build_inventory_item_state(pool: &PgPool) -> InventoryItemState {
     ));
 
     let create_category_service = Arc::new(CreateCategoryService::new(
+        household_access_policy.clone(),
+        category_repository.clone(),
+    ));
+
+    let list_categories_service = Arc::new(ListCategoriesService::new(
         household_access_policy,
         category_repository,
     ));
@@ -33,5 +40,6 @@ pub(super) fn build_inventory_item_state(pool: &PgPool) -> InventoryItemState {
     InventoryItemState {
         create_inventory_item: create_inventory_item_service,
         create_category: create_category_service,
+        list_categories: list_categories_service,
     }
 }
