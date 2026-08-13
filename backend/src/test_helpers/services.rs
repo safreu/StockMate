@@ -24,7 +24,7 @@ use crate::{
         },
         inventory::{
             adapters::{InMemoryCategoryRepository, InMemoryInventoryItemRepository},
-            application::CreateInventoryItemService,
+            application::{CreateCategoryService, CreateInventoryItemService},
         },
     },
     test_helpers::FixedSessionTokenGenerator,
@@ -205,4 +205,20 @@ pub fn build_create_inventory_item_service() -> (
         category_repository,
         household_repository,
     )
+}
+
+pub fn build_create_category_service() -> (
+    CreateCategoryService,
+    Arc<InMemoryCategoryRepository>,
+    Arc<InMemoryHouseholdRepository>,
+) {
+    let household_repository = Arc::new(InMemoryHouseholdRepository::new());
+    let household_access_policy = Arc::new(DefaultHouseholdAccessPolicy::new(
+        household_repository.clone(),
+    ));
+    let category_repository = Arc::new(InMemoryCategoryRepository::new());
+
+    let service = CreateCategoryService::new(household_access_policy, category_repository.clone());
+
+    (service, category_repository, household_repository)
 }
