@@ -21,3 +21,8 @@ mod get_inventory_item;
 pub use get_inventory_item::{
     GetInventoryItemCommand, GetInventoryItemError, GetInventoryItemService,
 };
+
+mod update_inventory_item;
+pub use update_inventory_item::{
+    UpdateInventoryItemCommand, UpdateInventoryItemError, UpdateInventoryItemService,
+};

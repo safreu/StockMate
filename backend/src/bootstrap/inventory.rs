@@ -13,6 +13,7 @@ use crate::{
             application::{
                 CreateCategoryService, CreateInventoryItemService, DeleteCategoryService,
                 GetInventoryItemService, ListCategoriesService, ListInventoryItemsService,
+                UpdateInventoryItemService,
             },
         },
     },
@@ -29,7 +30,7 @@ pub(super) fn build_inventory_item_state(pool: &PgPool) -> InventoryItemState {
     let create_inventory_item_service = Arc::new(CreateInventoryItemService::new(
         household_access_policy.clone(),
         category_repository.clone(),
-        inventory_item_repository,
+        inventory_item_repository.clone(),
     ));
 
     let create_category_service = Arc::new(CreateCategoryService::new(
@@ -44,7 +45,7 @@ pub(super) fn build_inventory_item_state(pool: &PgPool) -> InventoryItemState {
 
     let delete_category_service = Arc::new(DeleteCategoryService::new(
         household_access_policy.clone(),
-        category_repository,
+        category_repository.clone(),
     ));
 
     let list_inventory_items_service = Arc::new(ListInventoryItemsService::new(
@@ -53,8 +54,14 @@ pub(super) fn build_inventory_item_state(pool: &PgPool) -> InventoryItemState {
     ));
 
     let get_inventory_item_service = Arc::new(GetInventoryItemService::new(
+        household_access_policy.clone(),
+        inventory_item_query.clone(),
+    ));
+
+    let update_inventory_item_service = Arc::new(UpdateInventoryItemService::new(
         household_access_policy,
-        inventory_item_query,
+        category_repository,
+        inventory_item_repository,
     ));
 
     InventoryItemState {
@@ -64,5 +71,6 @@ pub(super) fn build_inventory_item_state(pool: &PgPool) -> InventoryItemState {
         delete_category: delete_category_service,
         list_inventory_items: list_inventory_items_service,
         get_inventory_item: get_inventory_item_service,
+        update_inventory_item: update_inventory_item_service,
     }
 }

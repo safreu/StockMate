@@ -3,6 +3,7 @@ use std::sync::Arc;
 use crate::modules::inventory::application::{
     CreateCategoryService, CreateInventoryItemService, DeleteCategoryService,
     GetInventoryItemService, ListCategoriesService, ListInventoryItemsService,
+    UpdateInventoryItemService,
 };
 
 #[derive(Clone)]
@@ -13,4 +14,5 @@ pub struct InventoryItemState {
     pub delete_category: Arc<DeleteCategoryService>,
     pub list_inventory_items: Arc<ListInventoryItemsService>,
     pub get_inventory_item: Arc<GetInventoryItemService>,
+    pub update_inventory_item: Arc<UpdateInventoryItemService>,
 }

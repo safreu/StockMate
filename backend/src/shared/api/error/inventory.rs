@@ -1,7 +1,7 @@
 use crate::{
     modules::inventory::application::{
         CreateCategoryError, CreateInventoryItemError, DeleteCategoryError, GetInventoryItemError,
-        ListCategoriesError, ListInventoryItemsError,
+        ListCategoriesError, ListInventoryItemsError, UpdateInventoryItemError,
     },
     shared::api::ApiError,
 };
@@ -117,6 +117,45 @@ impl From<GetInventoryItemError> for ApiError {
                 "The inventory item was not found",
             ),
             GetInventoryItemError::Internal(_) => ApiError::internal_error(),
+        }
+    }
+}
+
+impl From<UpdateInventoryItemError> for ApiError {
+    fn from(value: UpdateInventoryItemError) -> Self {
+        match value {
+            UpdateInventoryItemError::Forbidden => ApiError::forbidden(
+                "household_access_forbidden",
+                "You do not have permissions to modify this household",
+            ),
+            UpdateInventoryItemError::HouseholdNotFound => {
+                ApiError::not_found("household_not_found", "The household was not found")
+            }
+            UpdateInventoryItemError::InvalidName => {
+                ApiError::bad_request("invalid_category_name", "The category name is invalid")
+            }
+            UpdateInventoryItemError::ItemNotFound => ApiError::not_found(
+                "inventory_item_not_found",
+                "The inventory item was not found",
+            ),
+            UpdateInventoryItemError::CategoryNotFound => {
+                ApiError::not_found("category_not_found", "The category was not found")
+            }
+            UpdateInventoryItemError::ItemAlreadyExists => ApiError::conflict(
+                "inventory_item_already_exists",
+                "An active inventory item with this name already exists",
+            ),
+            UpdateInventoryItemError::InvalidPriority => {
+                ApiError::bad_request("invalid_priority", "The priority is invalid")
+            }
+            UpdateInventoryItemError::NoChanges => ApiError::bad_request(
+                "no_changes",
+                "At least one field must be provided for an update",
+            ),
+            UpdateInventoryItemError::ItemArchived => {
+                ApiError::conflict("code", "Archived inventory items cannot be modified")
+            }
+            UpdateInventoryItemError::Internal(_) => ApiError::internal_error(),
         }
     }
 }

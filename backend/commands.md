@@ -1200,3 +1200,122 @@ curl -i \
 ```
 
 Expected status: `401 Unauthorized`.
+
+## Update an inventory item
+
+Updates the metadata of an active inventory item. The authenticated user must be a member of the household.
+
+At least one field must be provided.
+
+The following fields can be updated:
+
+- `name`
+- `category_id`
+- `reorder_threshold`
+- `priority`
+
+Replace `<household-uuid>` and `<inventory-item-uuid>` with the corresponding IDs.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X PATCH \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Oat Milk",
+    "reorder_threshold": 3,
+    "priority": "medium"
+  }'
+```
+
+Expected status: `204 No Content`.
+
+Fields that are omitted remain unchanged.
+
+### Change the category
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X PATCH \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "category_id": "<category-uuid>"
+  }'
+```
+
+Expected status: `204 No Content`.
+
+### Remove the category
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X PATCH \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "category_id": null
+  }'
+```
+
+Expected status: `204 No Content`.
+
+### Update an inventory item without changes
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X PATCH \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+Expected status: `400 Bad Request`.
+
+### Update an inventory item with an invalid priority
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X PATCH \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "priority": "urgent"
+  }'
+```
+
+Expected status: `400 Bad Request`.
+
+### Update an unknown inventory item
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X PATCH \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/00000000-0000-0000-0000-000000000000" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "priority": "high"
+  }'
+```
+
+Expected status: `404 Not Found`.
+
+### Update an inventory item without authentication
+
+```bash
+curl -i \
+  -X PATCH \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "priority": "high"
+  }'
+```
+
+Expected status: `401 Unauthorized`.
