@@ -43,7 +43,7 @@ assert_status() {
 }
 
 echo
-echo "Running StockMate API smoke tests"
+echo "Running aims API smoke tests"
 echo "Base URL: $BASE_URL"
 echo
 
@@ -596,6 +596,6 @@ echo "PASS: inventory item remains with no category after category deletion"
 
 echo
 echo "================================="
-echo "All StockMate smoke tests passed."
+echo "All aims smoke tests passed."
 echo "================================="
 echo

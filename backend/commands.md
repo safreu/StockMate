@@ -1,4 +1,4 @@
-# StockMate Manual API Commands
+# aims Manual API Commands
 
 These commands assume the backend is running at `http://127.0.0.1:3000`.
 

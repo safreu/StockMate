@@ -34,7 +34,7 @@
 
 ### Extract reusable authentication/account crate
 
-**When:** After the first StockMate release.
+**When:** After the first aims release.
 
 The current accounts/authentication implementation contains functionality that could be reused across future Rust backend projects. Consider extracting the generic parts into a separate Rust crate and GitHub repository.
 
@@ -60,16 +60,16 @@ Potential candidates for extraction:
   - session authentication
 - Generic implementations such as Argon2 password hashing.
 
-Keep application-specific infrastructure in StockMate initially:
+Keep application-specific infrastructure in aims initially:
 
 - SQLx/Postgres repositories and migrations
 - Axum routes and handlers
 - `CurrentUser` extractor
 - cookie configuration
-- StockMate-specific API errors and DTOs
+- aims-specific API errors and DTOs
 - application bootstrap/wiring
 
-The extracted crate should not depend on StockMate. StockMate should depend on the reusable crate.
+The extracted crate should not depend on aims. aims should depend on the reusable crate.
 
 Possible future structure:
 
