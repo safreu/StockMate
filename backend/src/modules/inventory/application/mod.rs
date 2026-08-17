@@ -26,3 +26,13 @@ mod update_inventory_item;
 pub use update_inventory_item::{
     UpdateInventoryItemCommand, UpdateInventoryItemError, UpdateInventoryItemService,
 };
+
+mod archive_item;
+pub use archive_item::{
+    ArchiveInventoryItemCommand, ArchiveInventoryItemError, ArchiveInventoryItemService,
+};
+
+mod restore_item;
+pub use restore_item::{
+    RestoreInventoryItemCommand, RestoreInventoryItemError, RestoreInventoryItemService,
+};

@@ -25,8 +25,9 @@ use crate::{
         inventory::{
             adapters::{InMemoryCategoryRepository, InMemoryInventoryItemRepository},
             application::{
-                CreateCategoryService, CreateInventoryItemService, DeleteCategoryService,
-                ListCategoriesService, UpdateInventoryItemService,
+                ArchiveInventoryItemService, CreateCategoryService, CreateInventoryItemService,
+                DeleteCategoryService, ListCategoriesService, RestoreInventoryItemService,
+                UpdateInventoryItemService,
             },
         },
     },
@@ -283,4 +284,42 @@ pub fn build_update_inventory_item_service() -> (
         inventory_item_repository,
         household_repository,
     )
+}
+
+pub fn build_archive_item_service() -> (
+    ArchiveInventoryItemService,
+    Arc<InMemoryInventoryItemRepository>,
+    Arc<InMemoryHouseholdRepository>,
+) {
+    let household_repository = Arc::new(InMemoryHouseholdRepository::new());
+    let household_access_policy = Arc::new(DefaultHouseholdAccessPolicy::new(
+        household_repository.clone(),
+    ));
+    let inventory_item_repository = Arc::new(InMemoryInventoryItemRepository::new());
+
+    let service = ArchiveInventoryItemService::new(
+        household_access_policy,
+        inventory_item_repository.clone(),
+    );
+
+    (service, inventory_item_repository, household_repository)
+}
+
+pub fn build_restore_item_service() -> (
+    RestoreInventoryItemService,
+    Arc<InMemoryInventoryItemRepository>,
+    Arc<InMemoryHouseholdRepository>,
+) {
+    let household_repository = Arc::new(InMemoryHouseholdRepository::new());
+    let household_access_policy = Arc::new(DefaultHouseholdAccessPolicy::new(
+        household_repository.clone(),
+    ));
+    let inventory_item_repository = Arc::new(InMemoryInventoryItemRepository::new());
+
+    let service = RestoreInventoryItemService::new(
+        household_access_policy,
+        inventory_item_repository.clone(),
+    );
+
+    (service, inventory_item_repository, household_repository)
 }
