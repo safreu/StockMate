@@ -1,7 +1,8 @@
 use crate::{
     modules::inventory::application::{
-        CreateCategoryError, CreateInventoryItemError, DeleteCategoryError, GetInventoryItemError,
-        ListCategoriesError, ListInventoryItemsError, UpdateInventoryItemError,
+        ArchiveInventoryItemError, CreateCategoryError, CreateInventoryItemError,
+        DeleteCategoryError, GetInventoryItemError, ListCategoriesError, ListInventoryItemsError,
+        RestoreInventoryItemError, UpdateInventoryItemError,
     },
     shared::api::ApiError,
 };
@@ -156,6 +157,56 @@ impl From<UpdateInventoryItemError> for ApiError {
                 ApiError::conflict("code", "Archived inventory items cannot be modified")
             }
             UpdateInventoryItemError::Internal(_) => ApiError::internal_error(),
+        }
+    }
+}
+
+impl From<ArchiveInventoryItemError> for ApiError {
+    fn from(error: ArchiveInventoryItemError) -> Self {
+        match error {
+            ArchiveInventoryItemError::ItemNotFound => ApiError::not_found(
+                "inventory_item_not_found",
+                "The inventory item was not found",
+            ),
+            ArchiveInventoryItemError::Internal(_) => ApiError::internal_error(),
+            ArchiveInventoryItemError::Forbidden => ApiError::forbidden(
+                "household_access_forbidden",
+                "You do not have permissions to modify this household",
+            ),
+            ArchiveInventoryItemError::HouseholdNotFound => {
+                ApiError::not_found("household_not_found", "The household was not found")
+            }
+            ArchiveInventoryItemError::AlreadyArchived => ApiError::conflict(
+                "inventory_item_already_archived",
+                "The inventory item is already archived",
+            ),
+        }
+    }
+}
+
+impl From<RestoreInventoryItemError> for ApiError {
+    fn from(value: RestoreInventoryItemError) -> Self {
+        match value {
+            RestoreInventoryItemError::ItemNotFound => ApiError::not_found(
+                "inventory_item_not_found",
+                "The inventory item was not found",
+            ),
+            RestoreInventoryItemError::Internal(_) => ApiError::internal_error(),
+            RestoreInventoryItemError::Forbidden => ApiError::forbidden(
+                "household_access_forbidden",
+                "You do not have permissions to modify this household",
+            ),
+            RestoreInventoryItemError::HouseholdNotFound => {
+                ApiError::not_found("household_not_found", "The household was not found")
+            }
+            RestoreInventoryItemError::ItemAlreadyExists => ApiError::conflict(
+                "inventory_item_already_exists",
+                "An active inventory item with this name already exists",
+            ),
+            RestoreInventoryItemError::NotArchived => ApiError::conflict(
+                "inventory_item_not_archived",
+                "The inventory item is not archived",
+            ),
         }
     }
 }

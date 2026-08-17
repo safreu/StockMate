@@ -11,9 +11,9 @@ use crate::{
                 PostgresInventoryItemRepository,
             },
             application::{
-                CreateCategoryService, CreateInventoryItemService, DeleteCategoryService,
-                GetInventoryItemService, ListCategoriesService, ListInventoryItemsService,
-                UpdateInventoryItemService,
+                ArchiveInventoryItemService, CreateCategoryService, CreateInventoryItemService,
+                DeleteCategoryService, GetInventoryItemService, ListCategoriesService,
+                ListInventoryItemsService, RestoreInventoryItemService, UpdateInventoryItemService,
             },
         },
     },
@@ -59,9 +59,19 @@ pub(super) fn build_inventory_item_state(pool: &PgPool) -> InventoryItemState {
     ));
 
     let update_inventory_item_service = Arc::new(UpdateInventoryItemService::new(
-        household_access_policy,
+        household_access_policy.clone(),
         category_repository,
-        inventory_item_repository,
+        inventory_item_repository.clone(),
+    ));
+
+    let archive_inventory_item_service = Arc::new(ArchiveInventoryItemService::new(
+        household_access_policy.clone(),
+        inventory_item_repository.clone(),
+    ));
+
+    let restore_inventory_item_service = Arc::new(RestoreInventoryItemService::new(
+        household_access_policy.clone(),
+        inventory_item_repository.clone(),
     ));
 
     InventoryItemState {
@@ -72,5 +82,7 @@ pub(super) fn build_inventory_item_state(pool: &PgPool) -> InventoryItemState {
         list_inventory_items: list_inventory_items_service,
         get_inventory_item: get_inventory_item_service,
         update_inventory_item: update_inventory_item_service,
+        archive_inventory_item: archive_inventory_item_service,
+        restore_inventory_item: restore_inventory_item_service,
     }
 }

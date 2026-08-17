@@ -601,6 +601,96 @@ fi
 echo "PASS: inventory item update was persisted"
 
 # ---------------------------------------------------------------------------
+# Archive inventory item
+# ---------------------------------------------------------------------------
+
+STATUS="$(
+    curl -sS \
+        -o "$RESPONSE_FILE" \
+        -w "%{http_code}" \
+        -b "$COOKIE_FILE" \
+        -X POST \
+        "$BASE_URL/api/v1/inventory/$HOUSEHOLD_ID/items/$INVENTORY_ITEM_ID/archive"
+)"
+
+assert_status "$STATUS" "204" "archive inventory item"
+
+# ---------------------------------------------------------------------------
+# Verify archived item is not returned by active item endpoint
+# ---------------------------------------------------------------------------
+
+STATUS="$(
+    curl -sS \
+        -o "$RESPONSE_FILE" \
+        -w "%{http_code}" \
+        -b "$COOKIE_FILE" \
+        "$BASE_URL/api/v1/inventory/$HOUSEHOLD_ID/items/$INVENTORY_ITEM_ID"
+)"
+
+assert_status "$STATUS" "404" "archived inventory item is hidden from active item endpoint"
+
+# ---------------------------------------------------------------------------
+# Verify archived item is not returned by active inventory list
+# ---------------------------------------------------------------------------
+
+STATUS="$(
+    curl -sS \
+        -o "$RESPONSE_FILE" \
+        -w "%{http_code}" \
+        -b "$COOKIE_FILE" \
+        "$BASE_URL/api/v1/inventory/$HOUSEHOLD_ID/items"
+)"
+
+assert_status "$STATUS" "200" "list active inventory items after archiving"
+
+if jq -e --arg id "$INVENTORY_ITEM_ID" \
+    '.[] | select(.id == $id)' \
+    "$RESPONSE_FILE" >/dev/null; then
+    echo "FAIL: archived inventory item still appears in active inventory list"
+    exit 1
+fi
+
+echo "PASS: archived inventory item is hidden from active inventory list"
+
+# ---------------------------------------------------------------------------
+# Restore inventory item
+# ---------------------------------------------------------------------------
+
+STATUS="$(
+    curl -sS \
+        -o "$RESPONSE_FILE" \
+        -w "%{http_code}" \
+        -b "$COOKIE_FILE" \
+        -X POST \
+        "$BASE_URL/api/v1/inventory/$HOUSEHOLD_ID/items/$INVENTORY_ITEM_ID/restore"
+)"
+
+assert_status "$STATUS" "204" "restore inventory item"
+
+# ---------------------------------------------------------------------------
+# Verify restored item is active again
+# ---------------------------------------------------------------------------
+
+STATUS="$(
+    curl -sS \
+        -o "$RESPONSE_FILE" \
+        -w "%{http_code}" \
+        -b "$COOKIE_FILE" \
+        "$BASE_URL/api/v1/inventory/$HOUSEHOLD_ID/items/$INVENTORY_ITEM_ID"
+)"
+
+assert_status "$STATUS" "200" "get restored inventory item"
+
+RESTORED_ITEM_ID="$(jq -r '.id' "$RESPONSE_FILE")"
+
+if [[ "$RESTORED_ITEM_ID" != "$INVENTORY_ITEM_ID" ]]; then
+    echo "FAIL: restored inventory item was not returned correctly"
+    exit 1
+fi
+
+echo "PASS: restored inventory item is active again"
+
+# ---------------------------------------------------------------------------
 # Delete category
 # ---------------------------------------------------------------------------
 

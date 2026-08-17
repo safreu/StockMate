@@ -1319,3 +1319,110 @@ curl -i \
 ```
 
 Expected status: `401 Unauthorized`.
+
+## Archive an inventory item
+
+Archives an active inventory item. The authenticated user must be a member of the household.
+
+Replace `<household-uuid>` and `<inventory-item-uuid>` with the corresponding IDs.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/archive"
+```
+
+Expected status: `204 No Content`.
+
+Archived inventory items are no longer returned by the active inventory list or active item detail endpoints.
+
+### Archive an already archived inventory item
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/archive"
+```
+
+Expected status: `409 Conflict`.
+
+### Archive an unknown inventory item
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/00000000-0000-0000-0000-000000000000/archive"
+```
+
+Expected status: `404 Not Found`.
+
+### Archive an inventory item without authentication
+
+```bash
+curl -i \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/archive"
+```
+
+Expected status: `401 Unauthorized`.
+
+## Restore an inventory item
+
+Restores an archived inventory item. The authenticated user must be a member of the household.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/restore"
+```
+
+Expected status: `204 No Content`.
+
+### Restore an active inventory item
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/restore"
+```
+
+Expected status: `409 Conflict`.
+
+### Restore an inventory item when an active item with the same name exists
+
+If another active inventory item with the same normalized name exists, restoring the archived item is rejected.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/restore"
+```
+
+Expected status: `409 Conflict`.
+
+### Restore an unknown inventory item
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/00000000-0000-0000-0000-000000000000/restore"
+```
+
+Expected status: `404 Not Found`.
+
+### Restore an inventory item without authentication
+
+```bash
+curl -i \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/restore"
+```
+
+Expected status: `401 Unauthorized`.
