@@ -16,9 +16,9 @@ use crate::{
                 UpdateInventoryItemRequest,
             },
             application::{
-                CreateCategoryCommand, CreateInventoryItemCommand, DeleteCategoryCommand,
-                GetInventoryItemCommand, ListCategoriesCommand, ListInventoryItemsCommand,
-                UpdateInventoryItemCommand,
+                ArchiveInventoryItemCommand, CreateCategoryCommand, CreateInventoryItemCommand,
+                DeleteCategoryCommand, GetInventoryItemCommand, ListCategoriesCommand,
+                ListInventoryItemsCommand, RestoreInventoryItemCommand, UpdateInventoryItemCommand,
             },
             domain::{CategoryId, InventoryItemId, InventoryPriority},
         },
@@ -209,6 +209,48 @@ pub async fn update_inventory_item(
     state
         .inventory
         .update_inventory_item
+        .execute(command)
+        .await
+        .map_err(ApiError::from)?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
+pub async fn archive_inventory_item(
+    State(state): State<AppState>,
+    current_user: CurrentUser,
+    Path((household_id, item_id)): Path<(Uuid, Uuid)>,
+) -> Result<StatusCode, ApiError> {
+    let command = ArchiveInventoryItemCommand {
+        requester_id: current_user.user_id(),
+        household_id: HouseholdId::from_uuid(household_id),
+        item_id: InventoryItemId::from_uuid(item_id),
+    };
+
+    state
+        .inventory
+        .archive_inventory_item
+        .execute(command)
+        .await
+        .map_err(ApiError::from)?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
+pub async fn restore_inventory_item(
+    State(state): State<AppState>,
+    current_user: CurrentUser,
+    Path((household_id, item_id)): Path<(Uuid, Uuid)>,
+) -> Result<StatusCode, ApiError> {
+    let command = RestoreInventoryItemCommand {
+        requester_id: current_user.user_id(),
+        household_id: HouseholdId::from_uuid(household_id),
+        item_id: InventoryItemId::from_uuid(item_id),
+    };
+
+    state
+        .inventory
+        .restore_inventory_item
         .execute(command)
         .await
         .map_err(ApiError::from)?;
