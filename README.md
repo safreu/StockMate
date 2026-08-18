@@ -1,12 +1,12 @@
 
-# StockMate
+# aims (<ins>a</ins>nother <ins>i</ins>nventory <ins>m</ins>anagement <ins>s</ins>ystem)
 
 ---
-[![codecov](https://codecov.io/github/safreu/StockMate/graph/badge.svg?token=JKDRX41DDP)](https://codecov.io/github/safreu/StockMate)
+[![codecov](https://codecov.io/github/safreu/aims/graph/badge.svg?token=JKDRX41DDP)](https://codecov.io/github/safreu/aims)
 ---
 > A smart household inventory system that automates inventory tracking using QR codes.
 
-StockMate is a self-hosted household inventory system designed to make inventory management almost effortless. Instead of manually updating a shopping list whenever something runs out, every inventory item has one or more printed QR codes. Scanning these codes with a dedicated scanner connected to a Raspberry Pi immediately updates the inventory. When an item's stock falls below a configurable threshold, it is automatically added to the shopping list.
+aims is a self-hosted household inventory system designed to make inventory management almost effortless. Instead of manually updating a shopping list whenever something runs out, every inventory item has one or more printed QR codes. Scanning these codes with a dedicated scanner connected to a Raspberry Pi immediately updates the inventory. When an item's stock falls below a configurable threshold, it is automatically added to the shopping list.
 
 The primary interaction happens through the dedicated scanner. The Progressive Web App (PWA) is mainly used for administration, viewing the inventory, checking the shopping list, generating QR codes, and serving as a fallback scanner if the dedicated hardware is unavailable.
 

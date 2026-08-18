@@ -1,4 +1,4 @@
-# StockMate Manual API Commands
+# aims Manual API Commands
 
 These commands assume the backend is running at `http://127.0.0.1:3000`.
 
@@ -669,6 +669,946 @@ curl -i \
   -H "Content-Type: application/json" \
   -d '{
     "name": "Renamed Household"
+  }'
+```
+
+Expected status: `401 Unauthorized`.
+
+## Create an inventory item
+
+Creates an inventory item in a household. The authenticated user must be a member of the household.
+
+Replace `<household-uuid>` with the ID of the household.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Milk",
+    "current_stock": 2,
+    "reorder_threshold": 1,
+    "priority": "high"
+  }'
+```
+
+Expected status: `201 Created`.
+
+Example response:
+
+```json
+{
+  "id": "<inventory-item-uuid>"
+}
+```
+
+The `priority` field is optional. If omitted, it defaults to `default`.
+
+Valid priority values:
+
+- `default`
+- `low`
+- `medium`
+- `high`
+
+The `category_id` field is optional.
+
+### Create an inventory item with a category
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "category_id": "<category-uuid>",
+    "name": "Milk",
+    "current_stock": 2,
+    "reorder_threshold": 1,
+    "priority": "high"
+  }'
+```
+
+Expected status: `201 Created`.
+
+### Create a duplicate active inventory item
+
+After creating an item called `Milk`, try creating another active item with the same normalized name:
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "milk",
+    "current_stock": 1,
+    "reorder_threshold": 0
+  }'
+```
+
+Expected status: `409 Conflict`.
+
+### Create an inventory item with an invalid name
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "   ",
+    "current_stock": 1,
+    "reorder_threshold": 0
+  }'
+```
+
+Expected status: `400 Bad Request`.
+
+### Create an inventory item without authentication
+
+```bash
+curl -i \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Milk",
+    "current_stock": 1,
+    "reorder_threshold": 0
+  }'
+```
+
+Expected status: `401 Unauthorized`.
+
+## List inventory items
+
+Returns all active inventory items for a household. The authenticated user must be a member of the household.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items"
+```
+
+Expected status: `200 OK`.
+
+Example response:
+
+```json
+[
+  {
+    "id": "<inventory-item-uuid>",
+    "name": "Milk",
+    "category": {
+      "id": "<category-uuid>",
+      "name": "Food"
+    },
+    "current_stock": 2,
+    "reorder_threshold": 1,
+    "priority": "high",
+    "shopping_quantity": 0
+  }
+]
+```
+
+Inventory items without a category contain:
+
+```json
+{
+  "category": null
+}
+```
+
+Archived inventory items are not returned by this endpoint.
+
+If the household has no active inventory items, the endpoint returns:
+
+```json
+[]
+```
+
+## List inventory items of an unknown household
+
+```bash
+curl -i \
+  -b cookies.txt \
+  "$BASE_URL/api/v1/inventory/00000000-0000-0000-0000-000000000000/items"
+```
+
+Expected status: `404 Not Found`.
+
+## List inventory items without membership
+
+Use the ID of a household the authenticated user does not belong to.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  "$BASE_URL/api/v1/inventory/<other-household-uuid>/items"
+```
+
+Expected status: `403 Forbidden`.
+
+## List inventory items without authentication
+
+```bash
+curl -i \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items"
+```
+
+Expected status: `401 Unauthorized`.
+
+## Create a category
+
+Creates a category for a household. The authenticated user must be a member of the household.
+
+Replace `<household-uuid>` with the ID of the household.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/categories" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Food"
+  }'
+```
+
+Expected status: `201 Created`.
+
+Example response:
+
+```json
+{
+  "id": "<category-uuid>"
+}
+```
+
+Category names are unique within a household after normalization.
+
+## Create a duplicate category
+
+After creating a category called `Food`, try creating another category with the same normalized name:
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/categories" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "food"
+  }'
+```
+
+Expected status: `409 Conflict`.
+
+## Create a category with an invalid name
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/categories" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "   "
+  }'
+```
+
+Expected status: `400 Bad Request`.
+
+## Create a category without authentication
+
+```bash
+curl -i \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/categories" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Food"
+  }'
+```
+
+Expected status: `401 Unauthorized`.## Create a category
+
+Creates a category for a household. The authenticated user must be a member of the household.
+
+Replace `<household-uuid>` with the ID of the household.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/categories" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Food"
+  }'
+```
+
+Expected status: `201 Created`.
+
+Example response:
+
+```json
+{
+  "id": "<category-uuid>"
+}
+```
+
+Category names are unique within a household after normalization.
+
+## Create a duplicate category
+
+After creating a category called `Food`, try creating another category with the same normalized name:
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/categories" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "food"
+  }'
+```
+
+Expected status: `409 Conflict`.
+
+## Create a category with an invalid name
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/categories" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "   "
+  }'
+```
+
+Expected status: `400 Bad Request`.
+
+## Create a category without authentication
+
+```bash
+curl -i \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/categories" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Food"
+  }'
+```
+
+Expected status: `401 Unauthorized`.
+
+## List categories
+
+Returns all categories for a household. The authenticated user must be a member of the household.
+
+Replace `<household-uuid>` with the ID of the household.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/categories"
+```
+
+Expected status: `200 OK`.
+
+Example response:
+
+```json
+[
+  {
+    "id": "<category-uuid>",
+    "name": "Food"
+  },
+  {
+    "id": "<category-uuid>",
+    "name": "Cleaning"
+  }
+]
+```
+
+If the household has no categories, the endpoint returns an empty list:
+
+```json
+[]
+```
+
+## List categories of an unknown household
+
+```bash
+curl -i \
+  -b cookies.txt \
+  "$BASE_URL/api/v1/inventory/00000000-0000-0000-0000-000000000000/categories"
+```
+
+Expected status: `404 Not Found`.
+
+## List categories without membership
+
+Use the ID of a household the authenticated user does not belong to.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  "$BASE_URL/api/v1/inventory/<other-household-uuid>/categories"
+```
+
+Expected status: `403 Forbidden`.
+
+## List categories without authentication
+
+```bash
+curl -i \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/categories"
+```
+
+Expected status: `401 Unauthorized`.
+
+## Delete a category
+
+Deletes a category from a household. The authenticated user must be a member of the household.
+
+Deleting a category does not delete inventory items assigned to it. Their `category_id` is set to `null`.
+
+Replace `<household-uuid>` and `<category-uuid>` with the corresponding IDs.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X DELETE \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/categories/<category-uuid>"
+```
+
+Expected status: `204 No Content`.
+
+## Delete an unknown category
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X DELETE \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/categories/00000000-0000-0000-0000-000000000000"
+```
+
+Expected status: `404 Not Found`.
+
+## Delete a category without membership
+
+Use a category belonging to a household the authenticated user does not belong to.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X DELETE \
+  "$BASE_URL/api/v1/inventory/<other-household-uuid>/categories/<category-uuid>"
+```
+
+Expected status: `403 Forbidden`.
+
+## Delete a category without authentication
+
+```bash
+curl -i \
+  -X DELETE \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/categories/<category-uuid>"
+```
+
+Expected status: `401 Unauthorized`.
+
+## Get an inventory item
+
+Returns one active inventory item from a household. The authenticated user must be a member of the household.
+
+Replace `<household-uuid>` and `<inventory-item-uuid>` with the corresponding IDs.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>"
+```
+
+Expected status: `200 OK`.
+
+Example response:
+
+```json
+{
+  "id": "<inventory-item-uuid>",
+  "name": "Milk",
+  "category": {
+    "id": "<category-uuid>",
+    "name": "Food"
+  },
+  "current_stock": 2,
+  "reorder_threshold": 1,
+  "priority": "high",
+  "shopping_quantity": 0
+}
+```
+
+An inventory item without a category contains:
+
+```json
+{
+  "category": null
+}
+```
+
+Archived inventory items are not returned by this endpoint.
+
+## Get an unknown inventory item
+
+```bash
+curl -i \
+  -b cookies.txt \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/00000000-0000-0000-0000-000000000000"
+```
+
+Expected status: `404 Not Found`.
+
+## Get an inventory item without membership
+
+Use an inventory item belonging to a household the authenticated user does not belong to.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  "$BASE_URL/api/v1/inventory/<other-household-uuid>/items/<inventory-item-uuid>"
+```
+
+Expected status: `403 Forbidden`.
+
+## Get an inventory item without authentication
+
+```bash
+curl -i \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>"
+```
+
+Expected status: `401 Unauthorized`.
+
+## Update an inventory item
+
+Updates the metadata of an active inventory item. The authenticated user must be a member of the household.
+
+At least one field must be provided.
+
+The following fields can be updated:
+
+- `name`
+- `category_id`
+- `reorder_threshold`
+- `priority`
+
+Replace `<household-uuid>` and `<inventory-item-uuid>` with the corresponding IDs.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X PATCH \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "name": "Oat Milk",
+    "reorder_threshold": 3,
+    "priority": "medium"
+  }'
+```
+
+Expected status: `204 No Content`.
+
+Fields that are omitted remain unchanged.
+
+### Change the category
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X PATCH \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "category_id": "<category-uuid>"
+  }'
+```
+
+Expected status: `204 No Content`.
+
+### Remove the category
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X PATCH \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "category_id": null
+  }'
+```
+
+Expected status: `204 No Content`.
+
+### Update an inventory item without changes
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X PATCH \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>" \
+  -H "Content-Type: application/json" \
+  -d '{}'
+```
+
+Expected status: `400 Bad Request`.
+
+### Update an inventory item with an invalid priority
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X PATCH \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "priority": "urgent"
+  }'
+```
+
+Expected status: `400 Bad Request`.
+
+### Update an unknown inventory item
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X PATCH \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/00000000-0000-0000-0000-000000000000" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "priority": "high"
+  }'
+```
+
+Expected status: `404 Not Found`.
+
+### Update an inventory item without authentication
+
+```bash
+curl -i \
+  -X PATCH \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "priority": "high"
+  }'
+```
+
+Expected status: `401 Unauthorized`.
+
+## Archive an inventory item
+
+Archives an active inventory item. The authenticated user must be a member of the household.
+
+Replace `<household-uuid>` and `<inventory-item-uuid>` with the corresponding IDs.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/archive"
+```
+
+Expected status: `204 No Content`.
+
+Archived inventory items are no longer returned by the active inventory list or active item detail endpoints.
+
+### Archive an already archived inventory item
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/archive"
+```
+
+Expected status: `409 Conflict`.
+
+### Archive an unknown inventory item
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/00000000-0000-0000-0000-000000000000/archive"
+```
+
+Expected status: `404 Not Found`.
+
+### Archive an inventory item without authentication
+
+```bash
+curl -i \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/archive"
+```
+
+Expected status: `401 Unauthorized`.
+
+## Restore an inventory item
+
+Restores an archived inventory item. The authenticated user must be a member of the household.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/restore"
+```
+
+Expected status: `204 No Content`.
+
+### Restore an active inventory item
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/restore"
+```
+
+Expected status: `409 Conflict`.
+
+### Restore an inventory item when an active item with the same name exists
+
+If another active inventory item with the same normalized name exists, restoring the archived item is rejected.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/restore"
+```
+
+Expected status: `409 Conflict`.
+
+### Restore an unknown inventory item
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/00000000-0000-0000-0000-000000000000/restore"
+```
+
+Expected status: `404 Not Found`.
+
+### Restore an inventory item without authentication
+
+```bash
+curl -i \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/restore"
+```
+
+Expected status: `401 Unauthorized`.
+
+## Increase inventory stock
+
+Increases the stock of an active inventory item. The authenticated user must be a member of the household.
+
+Replace `<household-uuid>` and `<inventory-item-uuid>` with the corresponding IDs.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/increase" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 2
+  }'
+```
+
+Expected status: `204 No Content`.
+
+### Increase inventory stock by zero
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/increase" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 0
+  }'
+```
+
+Expected status: `400 Bad Request`.
+
+### Increase stock of an unknown inventory item
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/00000000-0000-0000-0000-000000000000/increase" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 1
+  }'
+```
+
+Expected status: `404 Not Found`.
+
+### Increase stock without authentication
+
+```bash
+curl -i \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/increase" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 1
+  }'
+```
+
+Expected status: `401 Unauthorized`.
+
+## Decrease inventory stock
+
+Decreases the stock of an active inventory item. The authenticated user must be a member of the household.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/decrease" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 1
+  }'
+```
+
+Expected status: `204 No Content`.
+
+### Decrease inventory stock by zero
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/decrease" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 0
+  }'
+```
+
+Expected status: `400 Bad Request`.
+
+### Decrease inventory stock below zero
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/decrease" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 999999
+  }'
+```
+
+Expected status: `409 Conflict`.
+
+### Decrease stock without authentication
+
+```bash
+curl -i \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/decrease" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 1
+  }'
+```
+
+Expected status: `401 Unauthorized`.
+
+## Set inventory stock
+
+Sets the stock of an active inventory item to an absolute value.
+
+Unlike increase and decrease, setting stock to `0` is valid.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X PUT \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/stock" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "stock": 5
+  }'
+```
+
+Expected status: `204 No Content`.
+
+### Set inventory stock to zero
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X PUT \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/stock" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "stock": 0
+  }'
+```
+
+Expected status: `204 No Content`.
+
+### Set stock of an unknown inventory item
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X PUT \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/00000000-0000-0000-0000-000000000000/stock" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "stock": 5
+  }'
+```
+
+Expected status: `404 Not Found`.
+
+### Set stock without authentication
+
+```bash
+curl -i \
+  -X PUT \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/stock" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "stock": 5
   }'
 ```
 

@@ -1,82 +1,17 @@
 use backend::modules::{
-    accounts::{
-        adapters::PostgresUserRepository,
-        domain::{User, UserId},
-        ports::UserRepository,
-    },
+    accounts::{adapters::PostgresUserRepository, domain::UserId},
     households::{
         adapters::PostgresHouseholdRepository,
-        domain::{
-            Household, HouseholdId, HouseholdKind, HouseholdMember, HouseholdName, HouseholdRole,
-        },
+        domain::{HouseholdId, HouseholdKind, HouseholdMember, HouseholdName, HouseholdRole},
         ports::{HouseholdRepository, HouseholdRepositoryError},
     },
 };
 use chrono::{SubsecRound, Utc};
 use sqlx::PgPool;
 
-use crate::integration::helpers::test_user;
-
-async fn insert_test_user(repository: &PostgresUserRepository) -> User {
-    let user = test_user("valid@email.com");
-
-    repository
-        .insert(&user)
-        .await
-        .expect("Test user should be insertable");
-
-    user
-}
-
-async fn insert_test_user_with_email(repository: &PostgresUserRepository, email: &str) -> User {
-    let user = test_user(email);
-
-    repository
-        .insert(&user)
-        .await
-        .expect("Test user should be insertable");
-
-    user
-}
-
-fn create_owned_household(user_id: UserId, kind: HouseholdKind) -> (Household, HouseholdMember) {
-    let household_id = HouseholdId::new();
-    let now = Utc::now().trunc_subsecs(6);
-
-    let personal_owner_id = match kind {
-        HouseholdKind::Personal => Some(user_id),
-        HouseholdKind::Shared => None,
-    };
-
-    let household = Household::new(
-        household_id,
-        HouseholdName::parse("Test household").expect("Test household name should be valid"),
-        kind,
-        personal_owner_id,
-        now,
-        now,
-    )
-    .expect("Test household should be valid");
-
-    let owner = HouseholdMember::new(household_id, user_id, HouseholdRole::Owner, now);
-
-    (household, owner)
-}
-
-async fn insert_owned_household(
-    repository: &PostgresHouseholdRepository,
-    user_id: UserId,
-    kind: HouseholdKind,
-) -> (Household, HouseholdMember) {
-    let (household, owner) = create_owned_household(user_id, kind);
-
-    repository
-        .create_with_owner(&household, &owner)
-        .await
-        .expect("Test household should be insertable");
-
-    (household, owner)
-}
+use crate::integration::helpers::{
+    create_owned_household, insert_owned_household, insert_test_user, insert_test_user_with_email,
+};
 
 #[sqlx::test]
 async fn personal_household_with_owner_can_be_created(pool: PgPool) {

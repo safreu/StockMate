@@ -1,0 +1,29 @@
+{
+  "db_name": "PostgreSQL",
+  "query": "\n            SELECT\n                current_stock,\n                archived_at\n            FROM inventory_items\n            WHERE id = $1 AND household_id = $2\n            ",
+  "describe": {
+    "columns": [
+      {
+        "ordinal": 0,
+        "name": "current_stock",
+        "type_info": "Int8"
+      },
+      {
+        "ordinal": 1,
+        "name": "archived_at",
+        "type_info": "Timestamptz"
+      }
+    ],
+    "parameters": {
+      "Left": [
+        "Uuid",
+        "Uuid"
+      ]
+    },
+    "nullable": [
+      false,
+      true
+    ]
+  },
+  "hash": "d2b5a73f07143f89441b48c59d84c6ef39aa52228dfbdf61bed04659ac86a913"
+}

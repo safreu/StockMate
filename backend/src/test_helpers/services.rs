@@ -15,11 +15,19 @@ use crate::{
             },
         },
         households::{
-            adapters::InMemoryHouseholdRepository,
+            adapters::{DefaultHouseholdAccessPolicy, InMemoryHouseholdRepository},
             application::{
                 AddHouseholdMemberService, CreateHouseholdService, GetHouseholdService,
                 ListHouseholdMembersService, ListHouseholdsForUserService,
                 RemoveHouseholdMemberService, RenameHouseholdService,
+            },
+        },
+        inventory::{
+            adapters::{InMemoryCategoryRepository, InMemoryInventoryItemRepository},
+            application::{
+                ArchiveInventoryItemService, CreateCategoryService, CreateInventoryItemService,
+                DeleteCategoryService, ListCategoriesService, RestoreInventoryItemService,
+                UpdateInventoryItemService,
             },
         },
     },
@@ -110,8 +118,9 @@ pub fn build_list_households_service() -> (
 
 pub fn build_get_household_service() -> (GetHouseholdService, Arc<InMemoryHouseholdRepository>) {
     let repository = Arc::new(InMemoryHouseholdRepository::new());
+    let policy = Arc::new(DefaultHouseholdAccessPolicy::new(repository.clone()));
 
-    let service = GetHouseholdService::new(repository.clone());
+    let service = GetHouseholdService::new(repository.clone(), policy);
 
     (service, repository)
 }
@@ -136,10 +145,16 @@ pub fn build_list_household_members_service() -> (
     Arc<InMemoryUserRepository>,
 ) {
     let household_repository = Arc::new(InMemoryHouseholdRepository::new());
+    let policy = Arc::new(DefaultHouseholdAccessPolicy::new(
+        household_repository.clone(),
+    ));
     let user_repository = Arc::new(InMemoryUserRepository::new());
 
-    let service =
-        ListHouseholdMembersService::new(household_repository.clone(), user_repository.clone());
+    let service = ListHouseholdMembersService::new(
+        household_repository.clone(),
+        policy,
+        user_repository.clone(),
+    );
 
     (service, household_repository, user_repository)
 }
@@ -150,9 +165,12 @@ pub fn build_remove_household_member_service() -> (
     Arc<InMemoryUserRepository>,
 ) {
     let household_repository = Arc::new(InMemoryHouseholdRepository::new());
+    let policy = Arc::new(DefaultHouseholdAccessPolicy::new(
+        household_repository.clone(),
+    ));
     let user_repository = Arc::new(InMemoryUserRepository::new());
 
-    let service = RemoveHouseholdMemberService::new(household_repository.clone());
+    let service = RemoveHouseholdMemberService::new(household_repository.clone(), policy);
 
     (service, household_repository, user_repository)
 }
@@ -164,4 +182,144 @@ pub fn build_rename_household_service() -> (RenameHouseholdService, Arc<InMemory
     let service = RenameHouseholdService::new(repository.clone());
 
     (service, repository)
+}
+
+pub fn build_create_inventory_item_service() -> (
+    CreateInventoryItemService,
+    Arc<InMemoryInventoryItemRepository>,
+    Arc<InMemoryCategoryRepository>,
+    Arc<InMemoryHouseholdRepository>,
+) {
+    let household_repository = Arc::new(InMemoryHouseholdRepository::new());
+    let household_access_policy = Arc::new(DefaultHouseholdAccessPolicy::new(
+        household_repository.clone(),
+    ));
+    let category_repository = Arc::new(InMemoryCategoryRepository::new());
+    let inventory_item_repository = Arc::new(InMemoryInventoryItemRepository::new());
+
+    let service = CreateInventoryItemService::new(
+        household_access_policy,
+        category_repository.clone(),
+        inventory_item_repository.clone(),
+    );
+
+    (
+        service,
+        inventory_item_repository,
+        category_repository,
+        household_repository,
+    )
+}
+
+pub fn build_create_category_service() -> (
+    CreateCategoryService,
+    Arc<InMemoryCategoryRepository>,
+    Arc<InMemoryHouseholdRepository>,
+) {
+    let household_repository = Arc::new(InMemoryHouseholdRepository::new());
+    let household_access_policy = Arc::new(DefaultHouseholdAccessPolicy::new(
+        household_repository.clone(),
+    ));
+    let category_repository = Arc::new(InMemoryCategoryRepository::new());
+
+    let service = CreateCategoryService::new(household_access_policy, category_repository.clone());
+
+    (service, category_repository, household_repository)
+}
+
+pub fn build_list_categories_service() -> (
+    ListCategoriesService,
+    Arc<InMemoryCategoryRepository>,
+    Arc<InMemoryHouseholdRepository>,
+) {
+    let household_repository = Arc::new(InMemoryHouseholdRepository::new());
+    let household_access_policy = Arc::new(DefaultHouseholdAccessPolicy::new(
+        household_repository.clone(),
+    ));
+    let category_repository = Arc::new(InMemoryCategoryRepository::new());
+
+    let service = ListCategoriesService::new(household_access_policy, category_repository.clone());
+
+    (service, category_repository, household_repository)
+}
+
+pub fn build_delete_category_service() -> (
+    DeleteCategoryService,
+    Arc<InMemoryCategoryRepository>,
+    Arc<InMemoryHouseholdRepository>,
+) {
+    let household_repository = Arc::new(InMemoryHouseholdRepository::new());
+    let household_access_policy = Arc::new(DefaultHouseholdAccessPolicy::new(
+        household_repository.clone(),
+    ));
+    let category_repository = Arc::new(InMemoryCategoryRepository::new());
+
+    let service = DeleteCategoryService::new(household_access_policy, category_repository.clone());
+
+    (service, category_repository, household_repository)
+}
+
+pub fn build_update_inventory_item_service() -> (
+    UpdateInventoryItemService,
+    Arc<InMemoryCategoryRepository>,
+    Arc<InMemoryInventoryItemRepository>,
+    Arc<InMemoryHouseholdRepository>,
+) {
+    let household_repository = Arc::new(InMemoryHouseholdRepository::new());
+    let household_access_policy = Arc::new(DefaultHouseholdAccessPolicy::new(
+        household_repository.clone(),
+    ));
+    let category_repository = Arc::new(InMemoryCategoryRepository::new());
+    let inventory_item_repository = Arc::new(InMemoryInventoryItemRepository::new());
+
+    let service = UpdateInventoryItemService::new(
+        household_access_policy,
+        category_repository.clone(),
+        inventory_item_repository.clone(),
+    );
+
+    (
+        service,
+        category_repository,
+        inventory_item_repository,
+        household_repository,
+    )
+}
+
+pub fn build_archive_item_service() -> (
+    ArchiveInventoryItemService,
+    Arc<InMemoryInventoryItemRepository>,
+    Arc<InMemoryHouseholdRepository>,
+) {
+    let household_repository = Arc::new(InMemoryHouseholdRepository::new());
+    let household_access_policy = Arc::new(DefaultHouseholdAccessPolicy::new(
+        household_repository.clone(),
+    ));
+    let inventory_item_repository = Arc::new(InMemoryInventoryItemRepository::new());
+
+    let service = ArchiveInventoryItemService::new(
+        household_access_policy,
+        inventory_item_repository.clone(),
+    );
+
+    (service, inventory_item_repository, household_repository)
+}
+
+pub fn build_restore_item_service() -> (
+    RestoreInventoryItemService,
+    Arc<InMemoryInventoryItemRepository>,
+    Arc<InMemoryHouseholdRepository>,
+) {
+    let household_repository = Arc::new(InMemoryHouseholdRepository::new());
+    let household_access_policy = Arc::new(DefaultHouseholdAccessPolicy::new(
+        household_repository.clone(),
+    ));
+    let inventory_item_repository = Arc::new(InMemoryInventoryItemRepository::new());
+
+    let service = RestoreInventoryItemService::new(
+        household_access_policy,
+        inventory_item_repository.clone(),
+    );
+
+    (service, inventory_item_repository, household_repository)
 }

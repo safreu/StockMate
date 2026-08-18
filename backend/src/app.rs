@@ -1,5 +1,6 @@
 use crate::bootstrap::BootstrapError;
 use crate::modules::households::api::households_router;
+use crate::modules::inventory::api::inventory_routes;
 use crate::{
     bootstrap::build_app_state, config::AppConfig, modules::accounts::api::accounts_router,
     shared::api::AppState,
@@ -30,7 +31,7 @@ impl Application {
     pub async fn run(self) -> Result<(), std::io::Error> {
         let address = self.listener.local_addr()?;
 
-        tracing::info!(%address, "StockMate backend started");
+        tracing::info!(%address, "aims backend started");
 
         axum::serve(self.listener, self.router)
             .with_graceful_shutdown(shutdown_signal())
@@ -43,6 +44,7 @@ fn build_router(state: AppState) -> Router {
         .route("/api/v1/health", get(health))
         .nest("/api/v1/auth", accounts_router())
         .nest("/api/v1/households", households_router())
+        .nest("/api/v1/inventory", inventory_routes())
         .layer(PropagateRequestIdLayer::x_request_id())
         .layer(TraceLayer::new_for_http())
         .layer(SetRequestIdLayer::x_request_id(MakeRequestUuid))

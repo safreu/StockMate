@@ -5,3 +5,6 @@ mod postgres_household_repository;
 pub use postgres_household_repository::PostgresHouseholdRepository;
 
 mod validate;
+
+mod default_household_access_policy;
+pub use default_household_access_policy::DefaultHouseholdAccessPolicy;
