@@ -1426,3 +1426,190 @@ curl -i \
 ```
 
 Expected status: `401 Unauthorized`.
+
+## Increase inventory stock
+
+Increases the stock of an active inventory item. The authenticated user must be a member of the household.
+
+Replace `<household-uuid>` and `<inventory-item-uuid>` with the corresponding IDs.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/increase" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 2
+  }'
+```
+
+Expected status: `204 No Content`.
+
+### Increase inventory stock by zero
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/increase" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 0
+  }'
+```
+
+Expected status: `400 Bad Request`.
+
+### Increase stock of an unknown inventory item
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/00000000-0000-0000-0000-000000000000/increase" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 1
+  }'
+```
+
+Expected status: `404 Not Found`.
+
+### Increase stock without authentication
+
+```bash
+curl -i \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/increase" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 1
+  }'
+```
+
+Expected status: `401 Unauthorized`.
+
+## Decrease inventory stock
+
+Decreases the stock of an active inventory item. The authenticated user must be a member of the household.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/decrease" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 1
+  }'
+```
+
+Expected status: `204 No Content`.
+
+### Decrease inventory stock by zero
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/decrease" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 0
+  }'
+```
+
+Expected status: `400 Bad Request`.
+
+### Decrease inventory stock below zero
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/decrease" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 999999
+  }'
+```
+
+Expected status: `409 Conflict`.
+
+### Decrease stock without authentication
+
+```bash
+curl -i \
+  -X POST \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/decrease" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "amount": 1
+  }'
+```
+
+Expected status: `401 Unauthorized`.
+
+## Set inventory stock
+
+Sets the stock of an active inventory item to an absolute value.
+
+Unlike increase and decrease, setting stock to `0` is valid.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X PUT \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/stock" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "stock": 5
+  }'
+```
+
+Expected status: `204 No Content`.
+
+### Set inventory stock to zero
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X PUT \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/stock" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "stock": 0
+  }'
+```
+
+Expected status: `204 No Content`.
+
+### Set stock of an unknown inventory item
+
+```bash
+curl -i \
+  -b cookies.txt \
+  -X PUT \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/00000000-0000-0000-0000-000000000000/stock" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "stock": 5
+  }'
+```
+
+Expected status: `404 Not Found`.
+
+### Set stock without authentication
+
+```bash
+curl -i \
+  -X PUT \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/stock" \
+  -H "Content-Type: application/json" \
+  -d '{
+    "stock": 5
+  }'
+```
+
+Expected status: `401 Unauthorized`.

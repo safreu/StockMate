@@ -691,6 +691,138 @@ fi
 echo "PASS: restored inventory item is active again"
 
 # ---------------------------------------------------------------------------
+# Increase inventory stock
+# ---------------------------------------------------------------------------
+
+STATUS="$(
+    curl -sS \
+        -o "$RESPONSE_FILE" \
+        -w "%{http_code}" \
+        -b "$COOKIE_FILE" \
+        -X POST \
+        "$BASE_URL/api/v1/inventory/$HOUSEHOLD_ID/items/$INVENTORY_ITEM_ID/increase" \
+        -H "Content-Type: application/json" \
+        -d '{
+            "amount": 3
+        }'
+)"
+
+assert_status "$STATUS" "204" "increase inventory stock"
+
+# ---------------------------------------------------------------------------
+# Verify increased stock
+# ---------------------------------------------------------------------------
+
+STATUS="$(
+    curl -sS \
+        -o "$RESPONSE_FILE" \
+        -w "%{http_code}" \
+        -b "$COOKIE_FILE" \
+        "$BASE_URL/api/v1/inventory/$HOUSEHOLD_ID/items/$INVENTORY_ITEM_ID"
+)"
+
+assert_status "$STATUS" "200" "get inventory item after stock increase"
+
+CURRENT_STOCK="$(jq -r '.current_stock' "$RESPONSE_FILE")"
+
+if [[ "$CURRENT_STOCK" != "5" ]]; then
+    echo "FAIL: inventory stock increase was not persisted"
+    echo "  expected: 5"
+    echo "  actual:   $CURRENT_STOCK"
+    exit 1
+fi
+
+echo "PASS: inventory stock increase was persisted"
+
+# ---------------------------------------------------------------------------
+# Decrease inventory stock
+# ---------------------------------------------------------------------------
+
+STATUS="$(
+    curl -sS \
+        -o "$RESPONSE_FILE" \
+        -w "%{http_code}" \
+        -b "$COOKIE_FILE" \
+        -X POST \
+        "$BASE_URL/api/v1/inventory/$HOUSEHOLD_ID/items/$INVENTORY_ITEM_ID/decrease" \
+        -H "Content-Type: application/json" \
+        -d '{
+            "amount": 2
+        }'
+)"
+
+assert_status "$STATUS" "204" "decrease inventory stock"
+
+# ---------------------------------------------------------------------------
+# Verify decreased stock
+# ---------------------------------------------------------------------------
+
+STATUS="$(
+    curl -sS \
+        -o "$RESPONSE_FILE" \
+        -w "%{http_code}" \
+        -b "$COOKIE_FILE" \
+        "$BASE_URL/api/v1/inventory/$HOUSEHOLD_ID/items/$INVENTORY_ITEM_ID"
+)"
+
+assert_status "$STATUS" "200" "get inventory item after stock decrease"
+
+CURRENT_STOCK="$(jq -r '.current_stock' "$RESPONSE_FILE")"
+
+if [[ "$CURRENT_STOCK" != "3" ]]; then
+    echo "FAIL: inventory stock decrease was not persisted"
+    echo "  expected: 3"
+    echo "  actual:   $CURRENT_STOCK"
+    exit 1
+fi
+
+echo "PASS: inventory stock decrease was persisted"
+
+# ---------------------------------------------------------------------------
+# Set inventory stock
+# ---------------------------------------------------------------------------
+
+STATUS="$(
+    curl -sS \
+        -o "$RESPONSE_FILE" \
+        -w "%{http_code}" \
+        -b "$COOKIE_FILE" \
+        -X PUT \
+        "$BASE_URL/api/v1/inventory/$HOUSEHOLD_ID/items/$INVENTORY_ITEM_ID/stock" \
+        -H "Content-Type: application/json" \
+        -d '{
+            "stock": 0
+        }'
+)"
+
+assert_status "$STATUS" "204" "set inventory stock"
+
+# ---------------------------------------------------------------------------
+# Verify stock can be set to zero
+# ---------------------------------------------------------------------------
+
+STATUS="$(
+    curl -sS \
+        -o "$RESPONSE_FILE" \
+        -w "%{http_code}" \
+        -b "$COOKIE_FILE" \
+        "$BASE_URL/api/v1/inventory/$HOUSEHOLD_ID/items/$INVENTORY_ITEM_ID"
+)"
+
+assert_status "$STATUS" "200" "get inventory item after setting stock"
+
+CURRENT_STOCK="$(jq -r '.current_stock' "$RESPONSE_FILE")"
+
+if [[ "$CURRENT_STOCK" != "0" ]]; then
+    echo "FAIL: inventory stock set operation was not persisted"
+    echo "  expected: 0"
+    echo "  actual:   $CURRENT_STOCK"
+    exit 1
+fi
+
+echo "PASS: inventory stock can be set to zero"
+
+# ---------------------------------------------------------------------------
 # Delete category
 # ---------------------------------------------------------------------------
 

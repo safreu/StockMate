@@ -1,8 +1,9 @@
 use crate::{
     modules::inventory::application::{
         ArchiveInventoryItemError, CreateCategoryError, CreateInventoryItemError,
-        DeleteCategoryError, GetInventoryItemError, ListCategoriesError, ListInventoryItemsError,
-        RestoreInventoryItemError, UpdateInventoryItemError,
+        DecreaseInventoryStockError, DeleteCategoryError, GetInventoryItemError,
+        IncreaseInventoryStockError, ListCategoriesError, ListInventoryItemsError,
+        RestoreInventoryItemError, SetInventoryStockError, UpdateInventoryItemError,
     },
     shared::api::ApiError,
 };
@@ -153,9 +154,10 @@ impl From<UpdateInventoryItemError> for ApiError {
                 "no_changes",
                 "At least one field must be provided for an update",
             ),
-            UpdateInventoryItemError::ItemArchived => {
-                ApiError::conflict("code", "Archived inventory items cannot be modified")
-            }
+            UpdateInventoryItemError::ItemArchived => ApiError::conflict(
+                "item_archived",
+                "Archived inventory items cannot be modified",
+            ),
             UpdateInventoryItemError::Internal(_) => ApiError::internal_error(),
         }
     }
@@ -206,6 +208,91 @@ impl From<RestoreInventoryItemError> for ApiError {
             RestoreInventoryItemError::NotArchived => ApiError::conflict(
                 "inventory_item_not_archived",
                 "The inventory item is not archived",
+            ),
+        }
+    }
+}
+
+impl From<IncreaseInventoryStockError> for ApiError {
+    fn from(error: IncreaseInventoryStockError) -> Self {
+        match error {
+            IncreaseInventoryStockError::Forbidden => ApiError::forbidden(
+                "household_access_forbidden",
+                "You do not have permissions to modify this household",
+            ),
+            IncreaseInventoryStockError::HouseholdNotFound => {
+                ApiError::not_found("household_not_found", "The household was not found")
+            }
+            IncreaseInventoryStockError::ItemNotFound => ApiError::not_found(
+                "inventory_item_not_found",
+                "The inventory item was not found",
+            ),
+            IncreaseInventoryStockError::Internal(_) => ApiError::internal_error(),
+            IncreaseInventoryStockError::ItemArchived => ApiError::conflict(
+                "item_archived",
+                "Archived inventory items cannot be modified",
+            ),
+            IncreaseInventoryStockError::InvalidAmount => ApiError::bad_request(
+                "invalid_amount",
+                "Increase amount must be greater than zero",
+            ),
+            IncreaseInventoryStockError::StockOverflow => ApiError::conflict(
+                "stock_overflow",
+                "Inventory stock cannot be increased further",
+            ),
+        }
+    }
+}
+
+impl From<DecreaseInventoryStockError> for ApiError {
+    fn from(error: DecreaseInventoryStockError) -> Self {
+        match error {
+            DecreaseInventoryStockError::Forbidden => ApiError::forbidden(
+                "household_access_forbidden",
+                "You do not have permissions to modify this household",
+            ),
+            DecreaseInventoryStockError::HouseholdNotFound => {
+                ApiError::not_found("household_not_found", "The household was not found")
+            }
+            DecreaseInventoryStockError::ItemNotFound => ApiError::not_found(
+                "inventory_item_not_found",
+                "The inventory item was not found",
+            ),
+            DecreaseInventoryStockError::Internal(_) => ApiError::internal_error(),
+            DecreaseInventoryStockError::ItemArchived => ApiError::conflict(
+                "item_archived",
+                "Archived inventory items cannot be modified",
+            ),
+            DecreaseInventoryStockError::InvalidAmount => ApiError::bad_request(
+                "invalid_amount",
+                "Decrease amount must be greater than zero",
+            ),
+            DecreaseInventoryStockError::InsufficientStock => ApiError::conflict(
+                "insufficient_stock",
+                "Inventory stock is insufficient for this decrease",
+            ),
+        }
+    }
+}
+
+impl From<SetInventoryStockError> for ApiError {
+    fn from(error: SetInventoryStockError) -> Self {
+        match error {
+            SetInventoryStockError::Forbidden => ApiError::forbidden(
+                "household_access_forbidden",
+                "You do not have permissions to modify this household",
+            ),
+            SetInventoryStockError::HouseholdNotFound => {
+                ApiError::not_found("household_not_found", "The household was not found")
+            }
+            SetInventoryStockError::ItemNotFound => ApiError::not_found(
+                "inventory_item_not_found",
+                "The inventory item was not found",
+            ),
+            SetInventoryStockError::Internal(_) => ApiError::internal_error(),
+            SetInventoryStockError::ItemArchived => ApiError::conflict(
+                "item_archived",
+                "Archived inventory items cannot be modified",
             ),
         }
     }

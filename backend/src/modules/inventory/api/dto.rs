@@ -80,3 +80,13 @@ pub struct UpdateInventoryItemRequest {
     pub reorder_threshold: Option<u32>,
     pub priority: Option<String>,
 }
+
+#[derive(Debug, Deserialize)]
+pub struct ChangeInventoryStockRequest {
+    pub amount: u32,
+}
+
+#[derive(Debug, Deserialize)]
+pub struct SetInventoryStockRequest {
+    pub stock: u32,
+}

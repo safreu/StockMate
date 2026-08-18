@@ -2,8 +2,9 @@ use std::sync::Arc;
 
 use crate::modules::inventory::application::{
     ArchiveInventoryItemService, CreateCategoryService, CreateInventoryItemService,
-    DeleteCategoryService, GetInventoryItemService, ListCategoriesService,
-    ListInventoryItemsService, RestoreInventoryItemService, UpdateInventoryItemService,
+    DecreaseInventoryStockService, DeleteCategoryService, GetInventoryItemService,
+    IncreaseInventoryStockService, ListCategoriesService, ListInventoryItemsService,
+    RestoreInventoryItemService, SetInventoryStockService, UpdateInventoryItemService,
 };
 
 #[derive(Clone)]
@@ -17,4 +18,7 @@ pub struct InventoryItemState {
     pub update_inventory_item: Arc<UpdateInventoryItemService>,
     pub archive_inventory_item: Arc<ArchiveInventoryItemService>,
     pub restore_inventory_item: Arc<RestoreInventoryItemService>,
+    pub increase_inventory_stock: Arc<IncreaseInventoryStockService>,
+    pub decrease_inventory_stock: Arc<DecreaseInventoryStockService>,
+    pub set_inventory_stock: Arc<SetInventoryStockService>,
 }

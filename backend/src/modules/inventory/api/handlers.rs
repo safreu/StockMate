@@ -11,14 +11,15 @@ use crate::{
         households::domain::HouseholdId,
         inventory::{
             api::dto::{
-                CreateCategoryRequest, CreateCategoryResponse, CreateInventoryItemRequest,
-                CreateInventoryItemResponse, InventoryItemResponse, ListCategoriesResponse,
-                UpdateInventoryItemRequest,
+                ChangeInventoryStockRequest, CreateCategoryRequest, CreateCategoryResponse,
+                CreateInventoryItemRequest, CreateInventoryItemResponse, InventoryItemResponse,
+                ListCategoriesResponse, SetInventoryStockRequest, UpdateInventoryItemRequest,
             },
             application::{
                 ArchiveInventoryItemCommand, CreateCategoryCommand, CreateInventoryItemCommand,
-                DeleteCategoryCommand, GetInventoryItemCommand, ListCategoriesCommand,
-                ListInventoryItemsCommand, RestoreInventoryItemCommand, UpdateInventoryItemCommand,
+                DecreaseInventoryStockCommand, DeleteCategoryCommand, GetInventoryItemCommand,
+                IncreaseInventoryStockCommand, ListCategoriesCommand, ListInventoryItemsCommand,
+                RestoreInventoryItemCommand, SetInventoryStockCommand, UpdateInventoryItemCommand,
             },
             domain::{CategoryId, InventoryItemId, InventoryPriority},
         },
@@ -251,6 +252,75 @@ pub async fn restore_inventory_item(
     state
         .inventory
         .restore_inventory_item
+        .execute(command)
+        .await
+        .map_err(ApiError::from)?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
+pub async fn increase_inventory_stock(
+    State(state): State<AppState>,
+    current_user: CurrentUser,
+    Path((household_id, item_id)): Path<(Uuid, Uuid)>,
+    Json(request): Json<ChangeInventoryStockRequest>,
+) -> Result<StatusCode, ApiError> {
+    let command = IncreaseInventoryStockCommand {
+        requester_id: current_user.user_id(),
+        household_id: HouseholdId::from_uuid(household_id),
+        item_id: InventoryItemId::from_uuid(item_id),
+        amount: request.amount,
+    };
+
+    state
+        .inventory
+        .increase_inventory_stock
+        .execute(command)
+        .await
+        .map_err(ApiError::from)?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
+pub async fn decrease_inventory_stock(
+    State(state): State<AppState>,
+    current_user: CurrentUser,
+    Path((household_id, item_id)): Path<(Uuid, Uuid)>,
+    Json(request): Json<ChangeInventoryStockRequest>,
+) -> Result<StatusCode, ApiError> {
+    let command = DecreaseInventoryStockCommand {
+        requester_id: current_user.user_id(),
+        household_id: HouseholdId::from_uuid(household_id),
+        item_id: InventoryItemId::from_uuid(item_id),
+        amount: request.amount,
+    };
+
+    state
+        .inventory
+        .decrease_inventory_stock
+        .execute(command)
+        .await
+        .map_err(ApiError::from)?;
+
+    Ok(StatusCode::NO_CONTENT)
+}
+
+pub async fn set_inventory_stock(
+    State(state): State<AppState>,
+    current_user: CurrentUser,
+    Path((household_id, item_id)): Path<(Uuid, Uuid)>,
+    Json(request): Json<SetInventoryStockRequest>,
+) -> Result<StatusCode, ApiError> {
+    let command = SetInventoryStockCommand {
+        requester_id: current_user.user_id(),
+        household_id: HouseholdId::from_uuid(household_id),
+        item_id: InventoryItemId::from_uuid(item_id),
+        stock: request.stock,
+    };
+
+    state
+        .inventory
+        .set_inventory_stock
         .execute(command)
         .await
         .map_err(ApiError::from)?;
