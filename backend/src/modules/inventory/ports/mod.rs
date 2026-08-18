@@ -13,4 +13,5 @@ pub use inventory_stock_repository::{InventoryStockRepository, InventoryStockRep
 mod stock_mutation_contexts;
 pub use stock_mutation_contexts::StockMutationContext;
 
-mod inventory_stock_history_queue;
+mod inventory_stock_history_query;
+pub use inventory_stock_history_query::{InventoryHistoryQuery, InventoryHistoryQueryError};
