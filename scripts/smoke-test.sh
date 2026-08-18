@@ -823,6 +823,122 @@ fi
 echo "PASS: inventory stock can be set to zero"
 
 # ---------------------------------------------------------------------------
+# List inventory stock history
+# ---------------------------------------------------------------------------
+
+STATUS="$(
+    curl -sS \
+        -o "$RESPONSE_FILE" \
+        -w "%{http_code}" \
+        -b "$COOKIE_FILE" \
+        "$BASE_URL/api/v1/inventory/$HOUSEHOLD_ID/items/$INVENTORY_ITEM_ID/history"
+)"
+
+assert_status "$STATUS" "200" "list inventory stock history"
+
+HISTORY_COUNT="$(jq 'length' "$RESPONSE_FILE")"
+
+if [[ "$HISTORY_COUNT" -lt 3 ]]; then
+    echo "FAIL: expected at least 3 stock history entries"
+    echo "  actual: $HISTORY_COUNT"
+    exit 1
+fi
+
+echo "PASS: stock history contains expected entries"
+
+# ---------------------------------------------------------------------------
+# Verify newest history entry is the stock set operation
+# ---------------------------------------------------------------------------
+
+LATEST_KIND="$(jq -r '.[0].kind' "$RESPONSE_FILE")"
+LATEST_AMOUNT="$(jq -r '.[0].amount' "$RESPONSE_FILE")"
+LATEST_STOCK_BEFORE="$(jq -r '.[0].stock_before' "$RESPONSE_FILE")"
+LATEST_STOCK_AFTER="$(jq -r '.[0].stock_after' "$RESPONSE_FILE")"
+LATEST_ACTOR_TYPE="$(jq -r '.[0].actor.type' "$RESPONSE_FILE")"
+LATEST_ACTOR_ID="$(jq -r '.[0].actor.id' "$RESPONSE_FILE")"
+
+if [[ "$LATEST_KIND" != "set" ]]; then
+    echo "FAIL: latest stock history entry has unexpected kind"
+    echo "  expected: set"
+    echo "  actual:   $LATEST_KIND"
+    exit 1
+fi
+
+if [[ "$LATEST_AMOUNT" != "null" ]]; then
+    echo "FAIL: set stock history entry should have null amount"
+    echo "  actual: $LATEST_AMOUNT"
+    exit 1
+fi
+
+if [[ "$LATEST_STOCK_BEFORE" != "3" ]]; then
+    echo "FAIL: set stock history entry has unexpected stock_before"
+    echo "  expected: 3"
+    echo "  actual:   $LATEST_STOCK_BEFORE"
+    exit 1
+fi
+
+if [[ "$LATEST_STOCK_AFTER" != "0" ]]; then
+    echo "FAIL: set stock history entry has unexpected stock_after"
+    echo "  expected: 0"
+    echo "  actual:   $LATEST_STOCK_AFTER"
+    exit 1
+fi
+
+if [[ "$LATEST_ACTOR_TYPE" != "user" ]]; then
+    echo "FAIL: stock history entry has unexpected actor type"
+    echo "  expected: user"
+    echo "  actual:   $LATEST_ACTOR_TYPE"
+    exit 1
+fi
+
+if [[ "$LATEST_ACTOR_ID" != "$OWNER_ID" ]]; then
+    echo "FAIL: stock history entry has unexpected actor"
+    exit 1
+fi
+
+echo "PASS: latest stock history entry is correct"
+
+# ---------------------------------------------------------------------------
+# Verify increase history entry
+# ---------------------------------------------------------------------------
+
+if ! jq -e \
+    '.[] |
+        select(
+            .kind == "increase"
+            and .amount == 3
+            and .stock_before == 2
+            and .stock_after == 5
+            and .source == "manual"
+        )' \
+    "$RESPONSE_FILE" >/dev/null; then
+    echo "FAIL: increase stock history entry is missing or incorrect"
+    exit 1
+fi
+
+echo "PASS: increase stock history entry is correct"
+
+# ---------------------------------------------------------------------------
+# Verify decrease history entry
+# ---------------------------------------------------------------------------
+
+if ! jq -e \
+    '.[] |
+        select(
+            .kind == "decrease"
+            and .amount == 2
+            and .stock_before == 5
+            and .stock_after == 3
+            and .source == "manual"
+        )' \
+    "$RESPONSE_FILE" >/dev/null; then
+    echo "FAIL: decrease stock history entry is missing or incorrect"
+    exit 1
+fi
+
+echo "PASS: decrease stock history entry is correct"
+
+# ---------------------------------------------------------------------------
 # Delete category
 # ---------------------------------------------------------------------------
 

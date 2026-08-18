@@ -3,9 +3,9 @@ use std::fmt::{self};
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct CategoryId(Uuid);
+pub struct InventoryStockEventId(Uuid);
 
-impl CategoryId {
+impl InventoryStockEventId {
     pub fn new() -> Self {
         Self(Uuid::new_v4())
     }
@@ -23,13 +23,13 @@ impl CategoryId {
     }
 }
 
-impl Default for CategoryId {
+impl Default for InventoryStockEventId {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl fmt::Display for CategoryId {
+impl fmt::Display for InventoryStockEventId {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.0)
     }
@@ -41,8 +41,8 @@ mod tests {
 
     #[test]
     fn new_creates_different_ids() {
-        let first = CategoryId::new();
-        let second = CategoryId::new();
+        let first = InventoryStockEventId::new();
+        let second = InventoryStockEventId::new();
 
         assert_ne!(first, second);
     }
@@ -51,7 +51,7 @@ mod tests {
     fn from_uuid_preservers_uuid() {
         let uuid = Uuid::new_v4();
 
-        let user_id = CategoryId::from_uuid(uuid);
+        let user_id = InventoryStockEventId::from_uuid(uuid);
 
         assert_eq!(user_id.as_uuid(), &uuid);
     }
@@ -59,7 +59,7 @@ mod tests {
     #[test]
     fn into_uuid_returns_the_inner_uuid() {
         let uuid = Uuid::new_v4();
-        let user_id = CategoryId::from_uuid(uuid);
+        let user_id = InventoryStockEventId::from_uuid(uuid);
 
         let result = user_id.into_uuid();
 

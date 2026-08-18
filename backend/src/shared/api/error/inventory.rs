@@ -3,7 +3,8 @@ use crate::{
         ArchiveInventoryItemError, CreateCategoryError, CreateInventoryItemError,
         DecreaseInventoryStockError, DeleteCategoryError, GetInventoryItemError,
         IncreaseInventoryStockError, ListCategoriesError, ListInventoryItemsError,
-        RestoreInventoryItemError, SetInventoryStockError, UpdateInventoryItemError,
+        ListInventoryStockHistoryError, RestoreInventoryItemError, SetInventoryStockError,
+        UpdateInventoryItemError,
     },
     shared::api::ApiError,
 };
@@ -293,6 +294,25 @@ impl From<SetInventoryStockError> for ApiError {
             SetInventoryStockError::ItemArchived => ApiError::conflict(
                 "item_archived",
                 "Archived inventory items cannot be modified",
+            ),
+        }
+    }
+}
+
+impl From<ListInventoryStockHistoryError> for ApiError {
+    fn from(value: ListInventoryStockHistoryError) -> Self {
+        match value {
+            ListInventoryStockHistoryError::Forbidden => ApiError::forbidden(
+                "household_access_forbidden",
+                "You do not have permissions to modify this household",
+            ),
+            ListInventoryStockHistoryError::HouseholdNotFound => {
+                ApiError::not_found("household_not_found", "The household was not found")
+            }
+            ListInventoryStockHistoryError::Internal(_) => ApiError::internal_error(),
+            ListInventoryStockHistoryError::ItemNotFound => ApiError::not_found(
+                "inventory_item_not_found",
+                "The inventory item was not found",
             ),
         }
     }

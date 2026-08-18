@@ -1,17 +1,17 @@
-use std::fmt::{self};
+use core::fmt;
 
 use uuid::Uuid;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-pub struct CategoryId(Uuid);
+pub struct DeviceId(Uuid);
 
-impl CategoryId {
+impl DeviceId {
     pub fn new() -> Self {
         Self(Uuid::new_v4())
     }
 
-    pub fn from_uuid(id: Uuid) -> Self {
-        Self(id)
+    pub fn from_uuid(value: Uuid) -> Self {
+        Self(value)
     }
 
     pub fn as_uuid(&self) -> &Uuid {
@@ -23,15 +23,15 @@ impl CategoryId {
     }
 }
 
-impl Default for CategoryId {
-    fn default() -> Self {
-        Self::new()
+impl fmt::Display for DeviceId {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        self.0.fmt(f)
     }
 }
 
-impl fmt::Display for CategoryId {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        write!(f, "{}", self.0)
+impl Default for DeviceId {
+    fn default() -> Self {
+        Self::new()
     }
 }
 
@@ -41,8 +41,8 @@ mod tests {
 
     #[test]
     fn new_creates_different_ids() {
-        let first = CategoryId::new();
-        let second = CategoryId::new();
+        let first = DeviceId::new();
+        let second = DeviceId::new();
 
         assert_ne!(first, second);
     }
@@ -51,7 +51,7 @@ mod tests {
     fn from_uuid_preservers_uuid() {
         let uuid = Uuid::new_v4();
 
-        let user_id = CategoryId::from_uuid(uuid);
+        let user_id = DeviceId::from_uuid(uuid);
 
         assert_eq!(user_id.as_uuid(), &uuid);
     }
@@ -59,7 +59,7 @@ mod tests {
     #[test]
     fn into_uuid_returns_the_inner_uuid() {
         let uuid = Uuid::new_v4();
-        let user_id = CategoryId::from_uuid(uuid);
+        let user_id = DeviceId::from_uuid(uuid);
 
         let result = user_id.into_uuid();
 

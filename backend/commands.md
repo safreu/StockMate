@@ -1613,3 +1613,117 @@ curl -i \
 ```
 
 Expected status: `401 Unauthorized`.
+
+## List inventory stock history
+
+Returns the stock history for a specific inventory item. The authenticated user must be a member of the household.
+
+Replace `<household-uuid>` and `<inventory-item-uuid>` with the corresponding IDs.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/history"
+```
+
+Expected status: `200 OK`.
+
+Example response:
+
+```json
+[
+  {
+    "id": "<stock-event-uuid>",
+    "sequence_number": 3,
+    "item_id": "<inventory-item-uuid>",
+    "kind": "set",
+    "source": "manual",
+    "amount": null,
+    "stock_before": 3,
+    "stock_after": 0,
+    "actor": {
+      "type": "user",
+      "id": "<user-uuid>",
+      "display_name": "Samuel"
+    },
+    "created_at": "2026-08-18T19:30:00Z"
+  },
+  {
+    "id": "<stock-event-uuid>",
+    "sequence_number": 2,
+    "item_id": "<inventory-item-uuid>",
+    "kind": "decrease",
+    "source": "manual",
+    "amount": 2,
+    "stock_before": 5,
+    "stock_after": 3,
+    "actor": {
+      "type": "user",
+      "id": "<user-uuid>",
+      "display_name": "Samuel"
+    },
+    "created_at": "2026-08-18T19:29:00Z"
+  },
+  {
+    "id": "<stock-event-uuid>",
+    "sequence_number": 1,
+    "item_id": "<inventory-item-uuid>",
+    "kind": "increase",
+    "source": "manual",
+    "amount": 3,
+    "stock_before": 2,
+    "stock_after": 5,
+    "actor": {
+      "type": "user",
+      "id": "<user-uuid>",
+      "display_name": "Samuel"
+    },
+    "created_at": "2026-08-18T19:28:00Z"
+  }
+]
+```
+
+History is returned newest first.
+
+For `increase` and `decrease` events, `amount` contains the requested stock change.
+
+For `set` events, `amount` is `null`, while `stock_before` and `stock_after` describe the absolute change.
+
+If the inventory item exists but has no stock history, the endpoint returns:
+
+```json
+[]
+```
+
+Expected status: `200 OK`.
+
+### List history of an unknown inventory item
+
+```bash
+curl -i \
+  -b cookies.txt \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/00000000-0000-0000-0000-000000000000/history"
+```
+
+Expected status: `404 Not Found`.
+
+### List stock history without membership
+
+Use an inventory item belonging to another household.
+
+```bash
+curl -i \
+  -b cookies.txt \
+  "$BASE_URL/api/v1/inventory/<other-household-uuid>/items/<inventory-item-uuid>/history"
+```
+
+Expected status: `403 Forbidden`.
+
+### List stock history without authentication
+
+```bash
+curl -i \
+  "$BASE_URL/api/v1/inventory/<household-uuid>/items/<inventory-item-uuid>/history"
+```
+
+Expected status: `401 Unauthorized`.
