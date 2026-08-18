@@ -8,12 +8,13 @@ use crate::{
         inventory::{
             adapters::{
                 PostgresCategoryRepository, PostgresInventoryItemQuery,
-                PostgresInventoryItemRepository,
+                PostgresInventoryItemRepository, PostgresInventoryStockRepository,
             },
             application::{
                 ArchiveInventoryItemService, CreateCategoryService, CreateInventoryItemService,
-                DeleteCategoryService, GetInventoryItemService, ListCategoriesService,
-                ListInventoryItemsService, RestoreInventoryItemService, UpdateInventoryItemService,
+                DecreaseInventoryStockService, DeleteCategoryService, GetInventoryItemService,
+                IncreaseInventoryStockService, ListCategoriesService, ListInventoryItemsService,
+                RestoreInventoryItemService, SetInventoryStockService, UpdateInventoryItemService,
             },
         },
     },
@@ -26,6 +27,7 @@ pub(super) fn build_inventory_item_state(pool: &PgPool) -> InventoryItemState {
     let category_repository = Arc::new(PostgresCategoryRepository::new(pool.clone()));
     let inventory_item_repository = Arc::new(PostgresInventoryItemRepository::new(pool.clone()));
     let inventory_item_query = Arc::new(PostgresInventoryItemQuery::new(pool.clone()));
+    let inventory_stock_repository = Arc::new(PostgresInventoryStockRepository::new(pool.clone()));
 
     let create_inventory_item_service = Arc::new(CreateInventoryItemService::new(
         household_access_policy.clone(),
@@ -74,6 +76,21 @@ pub(super) fn build_inventory_item_state(pool: &PgPool) -> InventoryItemState {
         inventory_item_repository.clone(),
     ));
 
+    let increase_inventory_stock_service = Arc::new(IncreaseInventoryStockService::new(
+        household_access_policy.clone(),
+        inventory_stock_repository.clone(),
+    ));
+
+    let decrease_inventory_stock_service = Arc::new(DecreaseInventoryStockService::new(
+        household_access_policy.clone(),
+        inventory_stock_repository.clone(),
+    ));
+
+    let set_inventory_stock_service = Arc::new(SetInventoryStockService::new(
+        household_access_policy.clone(),
+        inventory_stock_repository.clone(),
+    ));
+
     InventoryItemState {
         create_inventory_item: create_inventory_item_service,
         create_category: create_category_service,
@@ -84,5 +101,8 @@ pub(super) fn build_inventory_item_state(pool: &PgPool) -> InventoryItemState {
         update_inventory_item: update_inventory_item_service,
         archive_inventory_item: archive_inventory_item_service,
         restore_inventory_item: restore_inventory_item_service,
+        increase_inventory_stock: increase_inventory_stock_service,
+        decrease_inventory_stock: decrease_inventory_stock_service,
+        set_inventory_stock: set_inventory_stock_service,
     }
 }
