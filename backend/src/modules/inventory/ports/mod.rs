@@ -6,3 +6,6 @@ pub use inventory_item_repository::{InventoryItemRepository, InventoryItemReposi
 
 mod inventory_item_query;
 pub use inventory_item_query::{InventoryItemQuery, InventoryItemQueryError};
+
+mod inventory_stock_repository;
+pub use inventory_stock_repository::{InventoryStockRepository, InventoryStockRepositoryError};

@@ -12,3 +12,6 @@ pub use postgres_inventory_item_repository::PostgresInventoryItemRepository;
 
 mod postgres_inventory_item_query;
 pub use postgres_inventory_item_query::PostgresInventoryItemQuery;
+
+mod postgres_inventory_stock_repository;
+pub use postgres_inventory_stock_repository::PostgresInventoryStockRepository;
