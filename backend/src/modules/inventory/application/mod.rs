@@ -36,3 +36,16 @@ mod restore_item;
 pub use restore_item::{
     RestoreInventoryItemCommand, RestoreInventoryItemError, RestoreInventoryItemService,
 };
+
+mod increase_stock;
+pub use increase_stock::{
+    IncreaseInventoryStockCommand, IncreaseInventoryStockError, IncreaseInventoryStockService,
+};
+
+mod decrease_stock;
+pub use decrease_stock::{
+    DecreaseInventoryStockCommand, DecreaseInventoryStockError, DecreaseInventoryStockService,
+};
+
+mod set_stock;
+pub use set_stock::{SetInventoryStockCommand, SetInventoryStockError, SetInventoryStockService};
