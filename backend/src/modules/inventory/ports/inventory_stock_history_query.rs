@@ -6,16 +6,16 @@ use crate::modules::inventory::read_models::InventoryStockHistoryEntry;
 use crate::shared::db::PersistenceError;
 
 #[async_trait]
-pub trait InventoryHistoryQuery: Send + Sync {
+pub trait InventoryStockHistoryQuery: Send + Sync {
     async fn find_for_item(
         &self,
         household_id: &HouseholdId,
         item_id: &InventoryItemId,
-    ) -> Result<Vec<InventoryStockHistoryEntry>, InventoryHistoryQueryError>;
+    ) -> Result<Vec<InventoryStockHistoryEntry>, InventoryStockHistoryQueryError>;
 }
 
 #[derive(Debug, PartialEq, Eq, thiserror::Error)]
-pub enum InventoryHistoryQueryError {
+pub enum InventoryStockHistoryQueryError {
     #[error("Invalid stored data")]
     InvalidStoredData,
     #[error(transparent)]

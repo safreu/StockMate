@@ -9,7 +9,9 @@ use crate::modules::households::domain::HouseholdId;
 use crate::modules::inventory::domain::{
     InventoryItemId, InventoryStockEventId, InventoryStockEventKind, InventoryStockEventSource,
 };
-use crate::modules::inventory::ports::{InventoryHistoryQuery, InventoryHistoryQueryError};
+use crate::modules::inventory::ports::{
+    InventoryStockHistoryQuery, InventoryStockHistoryQueryError,
+};
 use crate::modules::inventory::read_models::{
     InventoryStockHistoryActor, InventoryStockHistoryEntry,
 };
@@ -42,12 +44,12 @@ struct InventoryStockHistoryRow {
 }
 
 #[async_trait]
-impl InventoryHistoryQuery for PostgresInventoryStockHistoryQuery {
+impl InventoryStockHistoryQuery for PostgresInventoryStockHistoryQuery {
     async fn find_for_item(
         &self,
         household_id: &HouseholdId,
         item_id: &InventoryItemId,
-    ) -> Result<Vec<InventoryStockHistoryEntry>, InventoryHistoryQueryError> {
+    ) -> Result<Vec<InventoryStockHistoryEntry>, InventoryStockHistoryQueryError> {
         let rows = sqlx::query_as!(
             InventoryStockHistoryRow,
             r#"
@@ -85,27 +87,28 @@ impl InventoryHistoryQuery for PostgresInventoryStockHistoryQuery {
 }
 
 impl TryFrom<InventoryStockHistoryRow> for InventoryStockHistoryEntry {
-    type Error = InventoryHistoryQueryError;
+    type Error = InventoryStockHistoryQueryError;
 
     fn try_from(value: InventoryStockHistoryRow) -> Result<Self, Self::Error> {
         let kind = InventoryStockEventKind::parse(&value.kind)
-            .map_err(|_| InventoryHistoryQueryError::InvalidStoredData)?;
+            .map_err(|_| InventoryStockHistoryQueryError::InvalidStoredData)?;
 
         let source = InventoryStockEventSource::parse(&value.source)
-            .map_err(|_| InventoryHistoryQueryError::InvalidStoredData)?;
+            .map_err(|_| InventoryStockHistoryQueryError::InvalidStoredData)?;
 
         let amount = value
             .amount
             .map(|amount| {
-                u32::try_from(amount).map_err(|_| InventoryHistoryQueryError::InvalidStoredData)
+                u32::try_from(amount)
+                    .map_err(|_| InventoryStockHistoryQueryError::InvalidStoredData)
             })
             .transpose()?;
 
         let stock_before = u32::try_from(value.stock_before)
-            .map_err(|_| InventoryHistoryQueryError::InvalidStoredData)?;
+            .map_err(|_| InventoryStockHistoryQueryError::InvalidStoredData)?;
 
         let stock_after = u32::try_from(value.stock_after)
-            .map_err(|_| InventoryHistoryQueryError::InvalidStoredData)?;
+            .map_err(|_| InventoryStockHistoryQueryError::InvalidStoredData)?;
 
         let actor = match (
             value.actor_user_id,
@@ -121,11 +124,11 @@ impl TryFrom<InventoryStockHistoryRow> for InventoryStockHistoryEntry {
                 InventoryStockHistoryActor::Device {
                     id: DeviceId::from_uuid(device_id),
                     name: DeviceName::parse(&device_name)
-                        .map_err(|_| InventoryHistoryQueryError::InvalidStoredData)?,
+                        .map_err(|_| InventoryStockHistoryQueryError::InvalidStoredData)?,
                 }
             }
             (None, None, None, None) => InventoryStockHistoryActor::System,
-            _ => return Err(InventoryHistoryQueryError::InvalidStoredData),
+            _ => return Err(InventoryStockHistoryQueryError::InvalidStoredData),
         };
 
         Ok(InventoryStockHistoryEntry {
